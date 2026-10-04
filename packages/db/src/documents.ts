@@ -139,6 +139,10 @@ export interface UpdateDocumentStateInput {
   readonly extractedText?: string | null;
   readonly metadata?: DocumentMetadata;
   readonly errorCode?: string | null;
+  readonly originalBytes?: Uint8Array | null;
+  readonly originalFilename?: string | null;
+  readonly indexedAt?: Date | null;
+  readonly embeddingError?: string | null;
 }
 
 /**
@@ -164,7 +168,71 @@ export async function updateDocumentState(
       ...(input.extractedText === undefined ? {} : { extractedText: input.extractedText }),
       ...(input.metadata === undefined ? {} : { metadata: input.metadata }),
       ...(input.errorCode === undefined ? {} : { errorCode: input.errorCode }),
+      ...(input.originalBytes === undefined ? {} : { originalBytes: input.originalBytes }),
+      ...(input.originalFilename === undefined ? {} : { originalFilename: input.originalFilename }),
+      ...(input.indexedAt === undefined ? {} : { indexedAt: input.indexedAt }),
+      ...(input.embeddingError === undefined ? {} : { embeddingError: input.embeddingError }),
       updatedAt: new Date(),
     })
     .where(eq(documents.id, documentId));
+}
+
+export interface SaveProcessedDocumentInput {
+  readonly id?: string;
+  readonly caseId: string;
+  readonly messageId: string;
+  readonly mediaIndex: number;
+  readonly mimeType: string;
+  readonly originalBytes: Uint8Array;
+  readonly originalFilename: string;
+  readonly sha256: string;
+  readonly status: 'pending' | 'ready' | 'failed';
+  readonly extractedText: string | null;
+  readonly metadata?: DocumentMetadata;
+  readonly errorCode?: string | null;
+}
+
+/** Store the private original and OCR result in one idempotent row per message attachment. */
+export async function saveProcessedDocument(
+  executor: DbExecutor,
+  input: SaveProcessedDocumentInput,
+): Promise<Document> {
+  const id = input.id ?? crypto.randomUUID();
+  const rows = await executor
+    .insert(documents)
+    .values({
+      id,
+      caseId: input.caseId,
+      messageId: input.messageId,
+      mediaIndex: input.mediaIndex,
+      storageKey: buildStorageKey(input.caseId, id),
+      mimeType: input.mimeType,
+      byteSize: input.originalBytes.byteLength,
+      sha256: input.sha256,
+      status: input.status,
+      extractedText: input.extractedText,
+      metadata: input.metadata ?? {},
+      errorCode: input.errorCode ?? null,
+      originalBytes: input.originalBytes,
+      originalFilename: input.originalFilename,
+    })
+    .onConflictDoUpdate({
+      target: [documents.messageId, documents.mediaIndex],
+      set: {
+        mimeType: input.mimeType,
+        byteSize: input.originalBytes.byteLength,
+        sha256: input.sha256,
+        status: input.status,
+        extractedText: input.extractedText,
+        metadata: input.metadata ?? {},
+        errorCode: input.errorCode ?? null,
+        originalBytes: input.originalBytes,
+        originalFilename: input.originalFilename,
+        indexedAt: null,
+        embeddingError: null,
+        updatedAt: new Date(),
+      },
+    })
+    .returning();
+  return toDocument(rows[0]!);
 }

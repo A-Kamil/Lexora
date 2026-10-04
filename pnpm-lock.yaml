@@ -50,6 +50,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@lexora/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@lexora/shared':
         specifier: workspace:*
         version: link:../../packages/shared

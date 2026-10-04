@@ -58,7 +58,7 @@ export interface ConverseInput {
   /** Chronological, client and assistant turns (lawyer turns are ignored). */
   history: ContextMessage[];
   /** Documents already received, as the OCR summarised them. */
-  documents: { documentType?: string | null; summary?: string | null }[];
+  documents: { documentType?: string | null; summary?: string | null; excerpt?: string | null }[];
   /** Latest analysis of the case (previous message): drives what the agent asks next. */
   caseFile?: { urgency: string; missingInformation: string[]; requestedDocuments: string[] } | null;
 }
@@ -67,9 +67,13 @@ const MAX_TURNS = 30;
 const MAX_TURN_CHARS = 4_000;
 
 export function buildConversation(input: ConverseInput) {
-  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [{ role: 'system', content: INTAKE_SYSTEM }];
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    { role: 'system', content: INTAKE_SYSTEM },
+  ];
   if (input.documents.length) {
-    const docs = input.documents.map((d) => `- ${d.documentType ?? 'document'}: ${d.summary ?? '(no summary)'}`).join('\n');
+    const docs = input.documents
+      .map((d) => `- ${d.documentType ?? 'document'}: ${d.summary ?? d.excerpt ?? '(no summary)'}`)
+      .join('\n');
     messages.push({ role: 'system', content: wrapAsData('RECEIVED DOCUMENTS', docs) });
   }
   if (input.caseFile) {
@@ -84,12 +88,20 @@ export function buildConversation(input: ConverseInput) {
   }
   for (const m of input.history.filter((x) => x.role !== 'lawyer').slice(-MAX_TURNS)) {
     const text = m.text.slice(0, MAX_TURN_CHARS);
-    messages.push(m.role === 'client' ? { role: 'user', content: wrapAsData('CLIENT', text) } : { role: 'assistant', content: text });
+    messages.push(
+      m.role === 'client'
+        ? { role: 'user', content: wrapAsData('CLIENT', text) }
+        : { role: 'assistant', content: text },
+    );
   }
   return messages;
 }
 
-export async function converse(client: Mistral, input: ConverseInput, model: string): Promise<string> {
+export async function converse(
+  client: Mistral,
+  input: ConverseInput,
+  model: string,
+): Promise<string> {
   const res = await client.chat.complete(
     { model, temperature: 0.3, maxTokens: 300, messages: buildConversation(input) },
     { timeoutMs: 20_000 },

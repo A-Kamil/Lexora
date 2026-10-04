@@ -69,12 +69,22 @@ export {
   getCaseDocuments,
   getReadyCaseDocuments,
   saveDocumentPlaceholder,
+  saveProcessedDocument,
   toDocument,
   toDocumentReference,
   updateDocumentState,
   type SaveDocumentPlaceholderInput,
+  type SaveProcessedDocumentInput,
   type UpdateDocumentStateInput,
 } from './documents.js';
+
+export {
+  markDocumentEmbeddingFailed,
+  replaceDocumentChunks,
+  searchDocumentChunks,
+  type DocumentChunkInput,
+  type RetrievedDocumentChunk,
+} from './document-chunks.js';
 
 export {
   findAnalysisById,
@@ -106,3 +116,4 @@ export {
 } from './seed.js';
 
 export * as schema from './schema.js';
+export { PostgresCaseStore } from './case-store.js';

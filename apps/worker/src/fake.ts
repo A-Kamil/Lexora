@@ -1,17 +1,33 @@
-import { buildContext, type AnalysisInput, type ConverseInput, type AnalysisResult, type CaseAnalysis, type LegalSource } from '@lexora/ai';
+import {
+  buildContext,
+  type AnalysisInput,
+  type ConverseInput,
+  type AnalysisResult,
+  type CaseAnalysis,
+  type LegalSource,
+} from '@lexora/ai';
 import type { AiPort, LegalPort, MediaDownloader, Messenger } from './ports.js';
 
 const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 const RULES: { urgency: CaseAnalysis['urgency']; words: string[]; reason: string }[] = [
-  { urgency: 'CRITICAL', words: ['garde à vue', 'police custody', 'arrested', 'arrêté'], reason: 'Police custody or arrest mentioned (fake AI keyword rule).' },
-  { urgency: 'HIGH', words: ['convocation', 'hearing', 'audience'], reason: 'Summons or hearing mentioned (fake AI keyword rule).' },
+  {
+    urgency: 'CRITICAL',
+    words: ['garde à vue', 'police custody', 'arrested', 'arrêté'],
+    reason: 'Police custody or arrest mentioned (fake AI keyword rule).',
+  },
+  {
+    urgency: 'HIGH',
+    words: ['convocation', 'hearing', 'audience'],
+    reason: 'Summons or hearing mentioned (fake AI keyword rule).',
+  },
 ];
 
 /** Deterministic keyword triage on the latest message, used in tests and whenever AI_MODE=fake. */
 export function fakeTriage(text: string): { urgency: CaseAnalysis['urgency']; reason: string } {
   const t = fold(text);
-  for (const r of RULES) if (r.words.some((w) => t.includes(fold(w)))) return { urgency: r.urgency, reason: r.reason };
+  for (const r of RULES)
+    if (r.words.some((w) => t.includes(fold(w)))) return { urgency: r.urgency, reason: r.reason };
   return { urgency: 'LOW', reason: 'No urgency keyword found (fake AI keyword rule).' };
 }
 
@@ -22,10 +38,17 @@ const ISSUES: Record<CaseAnalysis['urgency'], string> = {
   LOW: 'question générale',
 };
 
-export const FAKE_INTAKE_FIRST = 'Bonjour, vous êtes en contact avec l\'accueil automatique du cabinet (ceci n\'est pas un conseil juridique). Pouvez-vous me dire ce qui s\'est passé ?';
+export const FAKE_INTAKE_FIRST =
+  "Bonjour, vous êtes en contact avec l'accueil automatique du cabinet (ceci n'est pas un conseil juridique). Pouvez-vous me dire ce qui s'est passé ?";
 
 export class FakeAi implements AiPort {
-  calls = { analyze: [] as AnalysisInput[], converse: [] as ConverseInput[], transcribe: 0, extract: 0 };
+  calls = {
+    analyze: [] as AnalysisInput[],
+    converse: [] as ConverseInput[],
+    transcribe: 0,
+    extract: 0,
+    embed: [] as string[][],
+  };
 
   async analyze(input: AnalysisInput): Promise<AnalysisResult> {
     this.calls.analyze.push(input);
@@ -71,6 +94,14 @@ export class FakeAi implements AiPort {
     this.calls.extract++;
     return { text: new TextDecoder().decode(input.bytes).trim(), documentType: 'other' };
   }
+
+  async embed(texts: string[]) {
+    this.calls.embed.push(texts);
+    return texts.map((text) => {
+      const value = Math.max(1, text.length % 97) / 97;
+      return Array.from({ length: 1024 }, (_, index) => (index === 0 ? value : 0));
+    });
+  }
 }
 
 /** Records every send; nothing ever leaves the machine. */
@@ -82,7 +113,12 @@ export class FakeMessenger implements Messenger {
   }
 }
 
-export const MOCK_SOURCE: LegalSource = { reference: 'MOCK', title: 'Mock legal source', excerpt: 'Fixture used without credentials.', url: null };
+export const MOCK_SOURCE: LegalSource = {
+  reference: 'MOCK',
+  title: 'Mock legal source',
+  excerpt: 'Fixture used without credentials.',
+  url: null,
+};
 
 export class MockLegal implements LegalPort {
   questions: { question: string; clientIdentifiers: string[] }[] = [];
@@ -95,7 +131,9 @@ export class MockLegal implements LegalPort {
 
 /** Serves fixed bytes per URL; unknown URLs fail like a network error. */
 export class FakeDownloader implements MediaDownloader {
-  constructor(private readonly files: Record<string, { bytes: Uint8Array; contentType?: string }> = {}) {}
+  constructor(
+    private readonly files: Record<string, { bytes: Uint8Array; contentType?: string }> = {},
+  ) {}
   async download(url: string) {
     const f = this.files[url];
     if (!f) throw new Error('download failed (fake)');

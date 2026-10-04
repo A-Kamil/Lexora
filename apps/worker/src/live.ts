@@ -1,4 +1,14 @@
-import { DEFAULT_MODELS, analyzeCase, converse, describeImage, extractDocument, gatherLegalContext, mistralClient, transcribeVoice } from '@lexora/ai';
+import {
+  DEFAULT_MODELS,
+  analyzeCase,
+  converse,
+  describeImage,
+  embedTexts,
+  extractDocument,
+  gatherLegalContext,
+  mistralClient,
+  transcribeVoice,
+} from '@lexora/ai';
 import type { WorkerConfig } from './config.js';
 import type { AiPort, LegalPort } from './ports.js';
 
@@ -13,7 +23,9 @@ export function liveAi(config: WorkerConfig): AiPort {
   return {
     analyze: (input) => analyzeCase(client, input, models.analysis),
     converse: async (input) => ({ text: await converse(client, input, models.analysis) }),
-    transcribe: async (input) => ({ text: (await transcribeVoice(client, input, models.transcription)).text }),
+    transcribe: async (input) => ({
+      text: (await transcribeVoice(client, input, models.transcription)).text,
+    }),
     extract: async (input) => {
       if (!input.mimeType.startsWith('image/')) {
         const r = await extractDocument(client, input, models);
@@ -30,13 +42,16 @@ export function liveAi(config: WorkerConfig): AiPort {
       const ocrText = r?.text.trim() ?? '';
       const mostlyPicture = ocrText.replace(/--- page \d+ ---/g, '').trim().length < 80;
       return {
-        text: [ocrText, desc ? `DESCRIPTION DE LA PHOTO : ${desc}` : ''].filter(Boolean).join('\n\n'),
+        text: [ocrText, desc ? `DESCRIPTION DE LA PHOTO : ${desc}` : '']
+          .filter(Boolean)
+          .join('\n\n'),
         documentType: mostlyPicture ? 'photo' : (r?.metadata.documentType ?? 'photo'),
         summary: mostlyPicture
           ? (desc ?? r?.metadata.summary ?? '')
           : [r?.metadata.summary, desc ? `Photo : ${desc}` : ''].filter(Boolean).join(' — '),
       };
     },
+    embed: (texts) => embedTexts(client, texts, DEFAULT_MODELS.embedding),
   };
 }
 

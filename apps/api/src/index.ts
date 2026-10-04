@@ -1,7 +1,19 @@
 import Fastify from 'fastify';
+import {
+  applyMigrations,
+  createDb,
+  PostgresCaseStore,
+  seedDemoFixtures,
+  withTransaction,
+} from '@lexora/db';
 import { parseApiEnv } from '@lexora/shared';
-import { MemoryStore } from '@lexora/shared/pipeline';
-import { createDeps, jsonLogger, parseConfig as parseWorkerConfig, processInbound } from '@lexora/worker';
+import { MemoryStore, type CaseStore } from '@lexora/shared/pipeline';
+import {
+  createDeps,
+  jsonLogger,
+  parseConfig as parseWorkerConfig,
+  processInbound,
+} from '@lexora/worker';
 
 import { parseDemoConfig } from './demo-config.js';
 import { demoRoutes } from './demo-page.js';
@@ -10,7 +22,6 @@ import { applyDemoPhones } from './demo-phones.js';
 import { createIncomingMessageHandler } from './incoming-message-handler.js';
 import { InProcessQueue } from './inprocess-queue.js';
 import { MediaCache } from './media-cache.js';
-import { loadStore, saveStore } from './store-file.js';
 import { registerKapsoWebhook } from './routes/kapso-webhook.js';
 import { createKapsoClient } from './whatsapp/kapso.js';
 import { toWhatsApp } from './whatsapp/phone.js';
@@ -29,23 +40,21 @@ const kapsoClient = createKapsoClient({
   phoneNumberId: config.kapsoPhoneNumberId,
 });
 
-// Memory store until packages/db implements CaseStore, saved to a JSON file so a restart keeps the cases.
-const loaded = demo.storeFile ? loadStore(demo.storeFile) : null;
-const store = loaded ?? MemoryStore.seeded();
-const persist = () => {
-  if (!demo.storeFile) return;
+const memoryStore = process.env.DATA_MODE === 'memory' ? MemoryStore.seeded() : null;
+if (!memoryStore) await applyMigrations(config.databaseUrl);
+const database = memoryStore
+  ? null
+  : createDb({ connectionString: config.databaseUrl, maxConnections: 5 });
+if (database) await withTransaction(database.db, (tx) => seedDemoFixtures(tx, process.env));
+const store: CaseStore = memoryStore ?? new PostgresCaseStore(database!.db);
+let demoPhones = false;
+if (memoryStore) {
   try {
-    saveStore(store, demo.storeFile);
+    demoPhones = applyDemoPhones(memoryStore, demo);
   } catch (err) {
-    app.log.error({ err }, 'case store could not be saved');
+    console.error(`Refusing to start: ${(err as Error).message}`);
+    process.exit(1);
   }
-};
-let demoPhones: boolean;
-try {
-  demoPhones = applyDemoPhones(store, demo);
-} catch (err) {
-  console.error(`Refusing to start: ${(err as Error).message}`);
-  process.exit(1);
 }
 
 const media = new MediaCache();
@@ -59,13 +68,10 @@ const workerDeps = createDeps(workerConfig, store, jsonLogger, {
   },
 });
 const queue = new InProcessQueue(async (messageId) => {
-  persist(); // the inbound message, saved by the webhook just before
   try {
     await processInbound(workerDeps, messageId);
   } catch (err) {
     app.log.error({ err, messageId }, 'process-inbound failed');
-  } finally {
-    persist();
   }
 });
 
@@ -74,15 +80,22 @@ await app.register(registerKapsoWebhook, {
   kapsoClient,
   phoneNumberId: config.kapsoPhoneNumberId,
   webhookSecret: config.kapsoWebhookSecret,
-  handleIncomingMessage: createIncomingMessageHandler({ store, openIntake: workerConfig.openIntake, queue, media, log: app.log }),
+  handleIncomingMessage: createIncomingMessageHandler({
+    store,
+    openIntake: workerConfig.openIntake,
+    queue,
+    media,
+    log: app.log,
+  }),
 });
-// Read-only jury screen over the in-memory store.
-await app.register(demoRoutes, { store });
-// Lawyer dashboard (apps/web) read API.
-await app.register(readApiRoutes, { store });
+// The lightweight jury screen is kept for the explicit in-memory demo mode.
+if (memoryStore) {
+  await app.register(demoRoutes, { store: memoryStore });
+  await app.register(readApiRoutes, { store: memoryStore });
+}
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
-  process.once(signal, () => void app.close());
+  process.once(signal, () => void app.close().then(() => database?.close()));
 }
 
 await app.listen({ port: config.port, host: '0.0.0.0' });
@@ -92,8 +105,6 @@ app.log.info(
     messaging: workerConfig.messagingMode,
     legal: workerConfig.legalContextMode,
     openIntake: workerConfig.openIntake,
-    storeFile: demo.storeFile ?? 'off',
-    casesLoaded: loaded ? store.cases.length : 0,
     allowed: demo.allowedNumbers.size,
     demoPhones,
   },

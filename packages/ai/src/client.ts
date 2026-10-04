@@ -12,6 +12,7 @@ export const DEFAULT_MODELS = {
   transcription: 'voxtral-mini-latest',
   // Mistral Medium 3+ accepts images; override with MISTRAL_VISION_MODEL (e.g. pixtral-large-latest).
   vision: 'mistral-medium-latest',
+  embedding: 'mistral-embed',
 } as const;
 
 /** First text block of a chat completion, whatever the SDK's content shape. */
@@ -19,7 +20,9 @@ export function textOf(content: unknown): string {
   if (typeof content === 'string') return content;
   if (Array.isArray(content)) {
     return content
-      .map((c) => (c && typeof c === 'object' && 'text' in c ? String((c as { text: unknown }).text) : ''))
+      .map((c) =>
+        c && typeof c === 'object' && 'text' in c ? String((c as { text: unknown }).text) : '',
+      )
       .join('');
   }
   return '';
