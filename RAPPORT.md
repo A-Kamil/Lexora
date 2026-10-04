@@ -5,7 +5,7 @@
 - Étape 2 — `POST /webhooks/twilio` : signature Twilio vérifiée en premier (`twilio.validateRequest`, URL = `PUBLIC_BASE_URL + /webhooks/twilio`), puis champs requis (400). Tests : signature invalide/absente → 403, valide → 200 `<Response/>`, malformé → 400. (4f5a935)
 - Étape 3 — liste blanche `DEMO_ALLOWED_NUMBERS` (vide = tout refuser), `resolveParticipant` (absent/ambigu ignorés), avocat ignoré ; journaux avec numéro masqué `+336******01`, jamais le texte. Tests : hors liste, liste vide, absent, ambigu, avocat → 200 et rien stocké. (b98fd83)
 - Étape 4 — `saveInboundMessage` (avec `media[]`), `enqueue('process-inbound')` seulement si `created`, doublons ignorés, erreur de stockage ou de file → 503, corps > 256 Kio → 413. Tests : 1 message → 1 message + 1 tâche ; même `MessageSid` deux fois → 1 et 1 ; média → `media[]` rempli ; média annoncé mais absent → 400 ; panne de stockage → 503 ; corps trop gros → 413. (80c16db)
-- Étape 5 — `index.ts` (config, `MemoryStore.seeded()`, `InProcessQueue`, écoute, arrêt propre sur SIGINT/SIGTERM), `README.md`. Testé en direct (port 3999, faux jeton) : `/health/live` → 200 ; message signé → 200 `<Response/>`, journal « inbound stored and queued » avec `+336******01` et sans texte ; worker absent journalisé ; arrêt propre.
+- Étape 5 — `index.ts` (config, `MemoryStore.seeded()`, `InProcessQueue`, écoute, arrêt propre sur SIGINT/SIGTERM), `README.md`. Testé en direct (port 3999, faux jeton) : `/health/live` → 200 ; message signé → 200 `<Response/>`, journal « inbound stored and queued » avec `+336******01` et sans texte ; worker absent journalisé ; arrêt propre. (ecb8236)
 
 ## Non fait
 - Rien côté brief. Le mode `db` (pg-boss) dépend de packages/db.
