@@ -9,6 +9,7 @@ import { applyDemoPhones } from './demo-phones.js';
 import { createIncomingMessageHandler } from './incoming-message-handler.js';
 import { InProcessQueue } from './inprocess-queue.js';
 import { MediaCache } from './media-cache.js';
+import { loadStore, saveStore } from './store-file.js';
 import { registerKapsoWebhook } from './routes/kapso-webhook.js';
 import { createKapsoClient } from './whatsapp/kapso.js';
 import { toWhatsApp } from './whatsapp/phone.js';
@@ -27,8 +28,17 @@ const kapsoClient = createKapsoClient({
   phoneNumberId: config.kapsoPhoneNumberId,
 });
 
-// Memory store until packages/db implements CaseStore; seeded with one fictional case.
-const store = MemoryStore.seeded();
+// Memory store until packages/db implements CaseStore, saved to a JSON file so a restart keeps the cases.
+const loaded = demo.storeFile ? loadStore(demo.storeFile) : null;
+const store = loaded ?? MemoryStore.seeded();
+const persist = () => {
+  if (!demo.storeFile) return;
+  try {
+    saveStore(store, demo.storeFile);
+  } catch (err) {
+    app.log.error({ err }, 'case store could not be saved');
+  }
+};
 let demoPhones: boolean;
 try {
   demoPhones = applyDemoPhones(store, demo);
@@ -48,10 +58,13 @@ const workerDeps = createDeps(workerConfig, store, jsonLogger, {
   },
 });
 const queue = new InProcessQueue(async (messageId) => {
+  persist(); // the inbound message, saved by the webhook just before
   try {
     await processInbound(workerDeps, messageId);
   } catch (err) {
     app.log.error({ err, messageId }, 'process-inbound failed');
+  } finally {
+    persist();
   }
 });
 
@@ -76,6 +89,8 @@ app.log.info(
     messaging: workerConfig.messagingMode,
     legal: workerConfig.legalContextMode,
     openIntake: workerConfig.openIntake,
+    storeFile: demo.storeFile ?? 'off',
+    casesLoaded: loaded ? store.cases.length : 0,
     allowed: demo.allowedNumbers.size,
     demoPhones,
   },

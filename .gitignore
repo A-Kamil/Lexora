@@ -16,3 +16,6 @@ __pycache__/
 .superpowers/
 coverage/
 .DS_Store
+
+# Local case store of the demo (client conversations): never committed.
+apps/api/data/
