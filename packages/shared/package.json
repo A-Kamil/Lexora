@@ -7,6 +7,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./pipeline": {
+      "types": "./dist/pipeline.d.ts",
+      "default": "./dist/pipeline.js"
     }
   },
   "main": "./dist/index.js",
