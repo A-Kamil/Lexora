@@ -73,3 +73,16 @@ export async function touchWhatsappInbound(
     .set({ lastWhatsappInboundAt: at, updatedAt: new Date() })
     .where(eq(people.id, personId));
 }
+
+/**
+ * Live demo: the seeded lawyer has an unroutable +999 number; point it at the real demo phone so alerts reach it
+ * and its own messages are recognised as the lawyer's (never analysed as a new client).
+ */
+export async function setSeededLawyerPhone(db: DbExecutor, phoneE164: string): Promise<number> {
+  const rows = await db
+    .update(people)
+    .set({ phoneE164 })
+    .where(eq(people.role, 'lawyer'))
+    .returning({ id: people.id });
+  return rows.length;
+}

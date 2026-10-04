@@ -29,7 +29,7 @@ export {
   OwnershipViolationError,
 } from './errors.js';
 
-export { findPersonById, findPersonByPhone, toPerson, touchWhatsappInbound } from './people.js';
+export { findPersonById, findPersonByPhone, setSeededLawyerPhone, toPerson, touchWhatsappInbound } from './people.js';
 
 export {
   findCaseById,

@@ -26,6 +26,7 @@ mkdir -p ~/.local/bin && curl -L --fail -o ~/.local/bin/cloudflared \
 | `DEMO_LAWYER_PHONE` | lawyer phone, E.164 `+33…` (12 characters) |
 | `DEMO_ALLOWED_NUMBERS` | the same lawyer number |
 | `DEMO_OPEN_INTAKE` | `true` |
+| `DATA_MODE` | **`memory`** for the demo: dashboard API + `/demo` + JSON file persistence. Without it the API uses Postgres (`docker compose up -d` first) and the dashboard has no read API yet |
 | `AI_MODE` / `MESSAGING_MODE` / `LEGAL_CONTEXT_MODE` | `live` / `live` / `direct` |
 
 Check without printing values:
