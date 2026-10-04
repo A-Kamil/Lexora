@@ -1,4 +1,4 @@
-import { buildContext, type AnalysisInput, type AnalysisResult, type CaseAnalysis, type LegalSource } from '@lexora/ai';
+import { buildContext, type AnalysisInput, type ConverseInput, type AnalysisResult, type CaseAnalysis, type LegalSource } from '@lexora/ai';
 import type { AiPort, LegalPort, MediaDownloader, Messenger } from './ports.js';
 
 const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
@@ -22,8 +22,10 @@ const ISSUES: Record<CaseAnalysis['urgency'], string> = {
   LOW: 'question générale',
 };
 
+export const FAKE_INTAKE_FIRST = 'Bonjour, vous êtes en contact avec l\'accueil automatique du cabinet (ceci n\'est pas un conseil juridique). Pouvez-vous me dire ce qui s\'est passé ?';
+
 export class FakeAi implements AiPort {
-  calls = { analyze: [] as AnalysisInput[], transcribe: 0, extract: 0 };
+  calls = { analyze: [] as AnalysisInput[], converse: [] as ConverseInput[], transcribe: 0, extract: 0 };
 
   async analyze(input: AnalysisInput): Promise<AnalysisResult> {
     this.calls.analyze.push(input);
@@ -45,6 +47,17 @@ export class FakeAi implements AiPort {
         requestedDocuments: [],
         recommendedActions: high ? ['Rappeler le client'] : [],
       },
+    };
+  }
+
+  /** Deterministic intake turn: introduction first, then one follow-up question. */
+  async converse(input: ConverseInput) {
+    this.calls.converse.push(input);
+    const first = !input.history.some((m) => m.role === 'assistant');
+    return {
+      text: first
+        ? FAKE_INTAKE_FIRST
+        : 'Merci. Avez-vous un document à nous transmettre (photo ou PDF) ?',
     };
   }
 

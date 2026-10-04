@@ -62,6 +62,11 @@ export interface CaseStore {
   saveAnalysis(a: SavedAnalysis): Promise<{ analysisId: string; created: boolean }>;
   saveOutbound(input: { caseId: string; personId: string; text: string; purpose: 'lawyer_alert' | 'client_reply'; analysisId?: string }): Promise<{ messageId: string }>;
   markOutbound(messageId: string, status: 'sent' | 'failed' | 'simulated', providerMessageId?: string, error?: string): Promise<void>;
+  /**
+   * Highest urgency already delivered to the lawyer for this case, or null. Lets a conversation re-analyse every
+   * message without re-alerting the lawyer each time. Optional: without it, every HIGH/CRITICAL message alerts.
+   */
+  lastAlertedUrgency?(caseId: string): Promise<Urgency | null>;
 }
 
 export interface JobQueue {

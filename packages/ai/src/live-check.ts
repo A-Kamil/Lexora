@@ -2,7 +2,7 @@
  * Explicit live check (real API calls, fictional data): `pnpm --filter @lexora/ai build && node --env-file=../../.env dist/live-check.js`
  * Needs MISTRAL_API_KEY; PISTE_CLIENT_ID/PISTE_CLIENT_SECRET optional (Légifrance + Judilibre).
  */
-import { analyzeCase, gatherLegalContext, mistralClient, DEFAULT_MODELS } from './index.js';
+import { analyzeCase, converse, gatherLegalContext, mistralClient, DEFAULT_MODELS } from './index.js';
 
 const env = process.env;
 const client = mistralClient(env.MISTRAL_API_KEY);
@@ -27,3 +27,17 @@ const result = await analyzeCase(client, {
 }, env.MISTRAL_ANALYSIS_MODEL ?? DEFAULT_MODELS.analysis);
 console.log(JSON.stringify(result, null, 2));
 console.log(`done in ${Date.now() - t0} ms — status ${result.status}, urgency ${result.analysis.urgency}`);
+
+// Intake agent: first turn, then a follow-up that must not repeat the question already asked.
+const now = new Date().toISOString();
+const turn1 = await converse(client, { history: [{ id: 'm1', role: 'client', text: 'Bonsoir, mon fils a été arrêté ce soir, il est en garde à vue.', at: now }], documents: [] }, DEFAULT_MODELS.analysis);
+console.log('agent 1:', turn1);
+const turn2 = await converse(client, {
+  history: [
+    { id: 'm1', role: 'client', text: 'Bonsoir, mon fils a été arrêté ce soir, il est en garde à vue.', at: now },
+    { id: 'a1', role: 'assistant', text: turn1, at: now },
+    { id: 'm2', role: 'client', text: 'Au commissariat de Créteil, depuis 22h. Est-ce qu\'il doit parler aux policiers ?', at: now },
+  ],
+  documents: [],
+}, DEFAULT_MODELS.analysis);
+console.log('agent 2 (must not advise):', turn2);

@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { processInbound, formatLawyerAlert, CLIENT_REPLY_ALERTED, CLIENT_REPLY_RECEIVED } from '../process.js';
+import { processInbound, formatLawyerAlert, CLIENT_NOTICE_ALERTED, CLIENT_REPLY_RECEIVED } from '../process.js';
+import { FAKE_INTAKE_FIRST } from '../fake.js';
 import { inbound, setup } from './helpers.js';
 
-test('garde à vue → 1 CRITICAL analysis, 1 simulated lawyer alert, 1 client acknowledgement', async () => {
+test('garde à vue → 1 CRITICAL analysis, 1 lawyer alert, agent reply + "lawyer alerted" notice to the client', async () => {
   const { store, messenger, deps } = setup();
   const id = await inbound(store, 'Bonsoir, mon fils est en garde à vue au commissariat.');
   const r = await processInbound(deps, id);
@@ -20,10 +21,12 @@ test('garde à vue → 1 CRITICAL analysis, 1 simulated lawyer alert, 1 client a
   assert.match(alerts[0]!.text, /À faire : rappeler le client maintenant\.$/);
 
   const replies = store.outbound.filter((o) => o.purpose === 'client_reply');
-  assert.equal(replies.length, 1);
-  assert.equal(replies[0]!.text, CLIENT_REPLY_ALERTED);
-  assert.equal(replies[0]!.status, 'simulated');
-  assert.deepEqual(messenger.sent.map((s) => s.to), ['+33600000002', '+33600000001']);
+  assert.deepEqual(replies.map((o) => o.text), [FAKE_INTAKE_FIRST, CLIENT_NOTICE_ALERTED]);
+  assert.ok(replies.every((o) => o.status === 'simulated'));
+  // agent reply, lawyer alert, then the notice
+  assert.deepEqual(messenger.sent.map((s) => s.to), ['+33600000001', '+33600000002', '+33600000001']);
+  // the agent's reply is part of the conversation it will read back
+  assert.equal(store.messages.filter((m) => m.direction === 'outbound').length, 2);
 });
 
 test('LOW message → analysis, no lawyer alert', async () => {
@@ -33,7 +36,7 @@ test('LOW message → analysis, no lawyer alert', async () => {
   assert.equal(r.status === 'processed' && r.urgency, 'LOW');
   assert.equal(store.analyses.length, 1);
   assert.equal(store.outbound.filter((o) => o.purpose === 'lawyer_alert').length, 0);
-  assert.deepEqual(store.outbound.map((o) => o.text), [CLIENT_REPLY_RECEIVED]);
+  assert.deepEqual(store.outbound.map((o) => o.text), [FAKE_INTAKE_FIRST]);
 });
 
 test('same message processed twice → 1 analysis, 1 alert', async () => {
@@ -44,7 +47,26 @@ test('same message processed twice → 1 analysis, 1 alert', async () => {
   assert.equal(second.status, 'skipped');
   assert.equal(store.analyses.length, 1);
   assert.equal(store.outbound.filter((o) => o.purpose === 'lawyer_alert').length, 1);
-  assert.equal(messenger.sent.length, 2);
+  assert.equal(messenger.sent.length, 3); // reply, alert, notice — nothing more on the re-run
+});
+
+test('conversation: second CRITICAL message → agent asks the next question, lawyer not re-alerted', async () => {
+  const { store, messenger, deps } = setup();
+  await processInbound(deps, await inbound(store, 'Mon fils est en garde à vue.'));
+  const r = await processInbound(deps, await inbound(store, 'Il est en garde à vue au commissariat de Créteil depuis 22h.'));
+  assert.equal(r.status === 'processed' && r.alert, null);
+  assert.equal(store.outbound.filter((o) => o.purpose === 'lawyer_alert').length, 1);
+  assert.equal(messenger.sent.at(-1)!.body, 'Merci. Avez-vous un document à nous transmettre (photo ou PDF) ?');
+  // the agent saw its own first answer
+  const turns = (deps.ai as unknown as { calls: { converse: { history: { role: string }[] }[] } }).calls.converse[1]!.history;
+  assert.ok(turns.some((t) => t.role === 'assistant'));
+});
+
+test('intake agent failure → plain acknowledgement', async () => {
+  const { store, deps } = setup();
+  deps.ai.converse = async () => { throw new Error('provider down'); };
+  await processInbound(deps, await inbound(store, 'Bonjour'));
+  assert.equal(store.outbound.find((o) => o.purpose === 'client_reply')!.text, CLIENT_REPLY_RECEIVED);
 });
 
 test('unknown message → nothing happens', async () => {
@@ -60,7 +82,8 @@ test('open intake: lawyer alert still needs the allowlist, the client reply goes
   assert.equal(r.status === 'processed' && r.alert, 'failed');
   assert.equal(r.status === 'processed' && r.reply, 'simulated'); // FakeMessenger: delivered, nothing left the machine
   assert.deepEqual(messenger.sent.map((m) => m.to), ['+33600000001']);
-  assert.equal(store.outbound.find((o) => o.purpose === 'client_reply')!.text, CLIENT_REPLY_RECEIVED);
+  // the agent answered, but no "lawyer alerted" notice since the alert did not go out
+  assert.deepEqual(store.outbound.filter((o) => o.purpose === 'client_reply').map((o) => o.text), [FAKE_INTAKE_FIRST]);
 });
 
 test('closed intake: live messaging refuses numbers outside DEMO_ALLOWED_NUMBERS', async () => {
@@ -71,7 +94,7 @@ test('closed intake: live messaging refuses numbers outside DEMO_ALLOWED_NUMBERS
   assert.equal(messenger.sent.length, 0);
   assert.ok(store.outbound.every((o) => o.status === 'failed' && o.error === 'numéro non autorisé'));
   // the client is not told a lawyer was alerted when the alert did not go out
-  assert.equal(store.outbound.find((o) => o.purpose === 'client_reply')!.text, CLIENT_REPLY_RECEIVED);
+  assert.ok(!store.outbound.some((o) => o.text === CLIENT_NOTICE_ALERTED));
 });
 
 test('no lawyer assigned → no alert, analysis kept', async () => {

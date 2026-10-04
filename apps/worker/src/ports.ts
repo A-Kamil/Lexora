@@ -1,8 +1,10 @@
-import type { AnalysisInput, AnalysisResult, LegalAuditEntry, LegalSource } from '@lexora/ai';
+import type { AnalysisInput, AnalysisResult, ConverseInput, LegalAuditEntry, LegalSource } from '@lexora/ai';
 
 /** Thin envelopes around @lexora/ai and the WhatsApp provider, so processInbound runs identically on fakes and live services. */
 export interface AiPort {
   analyze(input: AnalysisInput): Promise<AnalysisResult>;
+  /** Intake agent: the next WhatsApp message to the client (one question, no legal advice). */
+  converse(input: ConverseInput): Promise<{ text: string }>;
   transcribe(input: { bytes: Uint8Array; fileName: string }): Promise<{ text: string }>;
   extract(input: { bytes: Uint8Array; mimeType: string; fileName?: string }): Promise<{ text: string; documentType: string; summary?: string }>;
 }

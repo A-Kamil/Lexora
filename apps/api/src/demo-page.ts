@@ -59,10 +59,13 @@ export function renderDemoPage({ context, analysis, outbound, now }: DemoView): 
     body = '<p class="muted">Aucun dossier en mémoire.</p>';
   } else {
     const tz = context.case.timezone;
-    const inbound = context.messages.filter((m) => m.direction === 'inbound');
-    const messages = inbound.length === 0
+    // Whole conversation: client turns and the intake agent's answers.
+    const messages = context.messages.length === 0
       ? '<p class="muted">Aucun message reçu.</p>'
-      : inbound.map((m) => `<article><div class="meta">${escapeHtml(time(m.createdAt, tz))} · ${escapeHtml(KINDS[m.kind] ?? m.kind)}</div><p>${escapeHtml(m.text) || '<span class="muted">(sans texte)</span>'}</p></article>`).join('');
+      : context.messages.map((m) => {
+          const who = m.direction === 'inbound' ? 'Client' : 'Accueil Lexora';
+          return `<article class="${m.direction}"><div class="meta">${escapeHtml(time(m.createdAt, tz))} · ${who} · ${escapeHtml(KINDS[m.kind] ?? m.kind)}</div><p>${escapeHtml(m.text) || '<span class="muted">(sans texte)</span>'}</p></article>`;
+        }).join('');
 
     const documents = context.documents.length === 0
       ? '<p class="muted">Aucun document.</p>'
@@ -90,9 +93,9 @@ export function renderDemoPage({ context, analysis, outbound, now }: DemoView): 
     body = `<header><h1>${escapeHtml(context.case.title)}</h1><p class="meta">Client : ${escapeHtml(context.client.displayName)} · Avocat : ${escapeHtml(context.lawyer?.displayName ?? 'aucun')}</p></header>
 <main>
 <section class="analysis"><h2>Dernière analyse</h2>${analysisHtml}</section>
-<section><h2>Messages reçus</h2>${messages}</section>
+<section><h2>Conversation</h2>${messages}</section>
 <section><h2>Documents</h2>${documents}</section>
-<section><h2>Messages envoyés</h2>${sent}</section>
+<section><h2>Envois WhatsApp</h2>${sent}</section>
 </main>`;
   }
 
@@ -110,7 +113,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1
 section{background:#fff;border:1px solid #ddd;border-radius:8px;padding:16px}
 section.analysis{grid-column:1/-1}
 article{border-top:1px solid #eee;padding:8px 0}article:first-of-type{border-top:0}
-article p{margin:4px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+article p{margin:4px 0;white-space:pre-wrap;overflow-wrap:anywhere}article.outbound{padding-left:16px;color:#1d4ed8}
 .meta{color:#666;font-size:.85rem}.muted{color:#888}
 .urgency{display:inline-block;font-size:3rem;font-weight:800;letter-spacing:.05em;padding:4px 20px;border-radius:8px;color:#fff;background:#777}
 .urgency.critical{background:#b00020}.urgency.high{background:#d9480f}.urgency.medium{background:#b08900}.urgency.low{background:#2b8a3e}

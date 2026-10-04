@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type {
   CaseContext, CaseRef, CaseStore, InboundMessageInput, JobQueue, Person, ResolveResult,
-  SavedAnalysis, StoredDocument, StoredMessage,
+  SavedAnalysis, StoredDocument, StoredMessage, Urgency,
 } from './ports.js';
 
 /** In-memory CaseStore/JobQueue for tests and for running the pipeline before Postgres exists. Fictional data only. */
@@ -88,7 +88,23 @@ export class MemoryStore implements CaseStore {
   async saveOutbound(input: { caseId: string; personId: string; text: string; purpose: 'lawyer_alert' | 'client_reply'; analysisId?: string }) {
     const id = randomUUID();
     this.outbound.push({ id, ...input });
+    // What the client is told is part of the conversation the intake agent reads back.
+    if (input.purpose === 'client_reply') {
+      this.messages.push({ id, caseId: input.caseId, conversationId: `conv-${input.caseId}`, personId: null, direction: 'outbound', kind: 'text', text: input.text, createdAt: new Date().toISOString() });
+    }
     return { messageId: id };
+  }
+
+  async lastAlertedUrgency(caseId: string): Promise<Urgency | null> {
+    const rank: Urgency[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+    let best: Urgency | null = null;
+    for (const o of this.outbound) {
+      if (o.caseId !== caseId || o.purpose !== 'lawyer_alert' || (o.status !== 'sent' && o.status !== 'simulated')) continue;
+      const result = this.analyses.find((a) => a.id === o.analysisId)?.result as { analysis?: { urgency?: Urgency } } | undefined;
+      const u = result?.analysis?.urgency;
+      if (u && (best === null || rank.indexOf(u) > rank.indexOf(best))) best = u;
+    }
+    return best;
   }
 
   async markOutbound(id: string, status: 'sent' | 'failed' | 'simulated', providerMessageId?: string, error?: string) {
