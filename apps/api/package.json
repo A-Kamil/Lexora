@@ -1,0 +1,21 @@
+{
+  "name": "@lexora/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/app.d.ts",
+      "default": "./dist/app.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "node --env-file=../../.env dist/index.js",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@lexora/shared": "workspace:*",
+    "fastify": "5.12.5"
+  }
+}

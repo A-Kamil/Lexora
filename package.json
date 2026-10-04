@@ -2,14 +2,15 @@
   "name": "lexora-backend",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.32.1",
+  "packageManager": "pnpm@11.19.0",
   "engines": {
-    "node": "24.11.0"
+    "node": "24.19.0"
   },
   "scripts": {
-    "build": "pnpm -r --filter './packages/**' run build",
+    "build": "pnpm --filter '@lexora/*' -r build",
+    "dev": "pnpm build && pnpm --filter @lexora/api dev",
     "check": "pnpm run lint && pnpm run format:check && pnpm run typecheck",
-    "typecheck": "tsc --build --force tsconfig.json && tsc -p tsconfig.check.json",
+    "typecheck": "tsc -b --pretty false && tsc -p tsconfig.check.json",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -23,20 +24,15 @@
     "@eslint/js": "9.39.1",
     "@lexora/db": "workspace:*",
     "@lexora/shared": "workspace:*",
-    "@types/node": "24.10.1",
+    "@types/node": "24.19.1",
     "@types/pg": "8.15.5",
     "drizzle-orm": "0.44.6",
     "eslint": "9.39.1",
     "pg": "8.16.3",
     "prettier": "3.6.2",
     "tsx": "4.21.0",
-    "typescript": "5.9.3",
-    "typescript-eslint": "8.46.4",
+    "typescript": "6.0.2",
+    "typescript-eslint": "8.71.0",
     "vitest": "3.2.4"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
   }
 }

@@ -5,7 +5,7 @@ import threading
 import time
 from collections import defaultdict
 
-from . import agents, ai, policy, store, urgency
+from . import agents, ai, policy, store
 
 MEDIA_DIR = os.environ.get("LEXORA_MEDIA", "data/media")
 PUBLIC_URL = os.environ.get("LEXORA_PUBLIC_URL", "").rstrip("/")
@@ -72,11 +72,14 @@ def add_media(case_id: int, data: bytes, ctype: str, fname: str) -> None:
 def finish(case_id: int, phone: str, send) -> None:
     t0 = time.time()
     case_file = ai.build_case_file(store.messages(case_id), store.documents(case_id), store.sources(case_id))
-    # Urgency is decided by rules in code, never by the model (app/urgency.py, app/data/urgence.json).
-    u = urgency.classify(case_file.get("faits") or {})
+    # Urgency: model assessment against the firm's criteria (app/data/criteres_urgence.md), shown as such.
+    u = case_file.get("urgence") if isinstance(case_file.get("urgence"), dict) else {}
+    u.setdefault("niveau", "48h")
+    u.setdefault("action", "Rappeler le client sous 48 h")
+    u.setdefault("raison", "évaluation automatique indisponible : à qualifier par l'avocat")
     case_file["urgence"] = u
-    policy.record(case_id, "classificateur", "regles_urgence", {"faits": u["faits_utilises"]}, "allow",
-                  f"{u['niveau']} : " + " ; ".join(f"{x['id']} {x['motif']}" for x in u["regles"]), int((time.time() - t0) * 1000))
+    policy.record(case_id, "qualification", "evaluation_urgence", {"niveau": u["niveau"]}, "allow",
+                  u["raison"], int((time.time() - t0) * 1000))
     # >>> conflict check on case_file["employeur"] against the firm's client list goes here (mcp_rogue gate).
     store.close_case(case_id, case_file)
     policy.record(case_id, "qualification", "transmission_avocat", {"dossier": case_id}, "allow",
@@ -112,8 +115,7 @@ def recap_markdown(case_id: int) -> str:
     u = f.get("urgence") or {}
     L = [f"# Dossier {c['id']} — {f.get('client') or c.get('client_name') or c['phone']}", ""]
     if u:
-        L += [f"**Urgence : {u['niveau']}** — {u['action']} (calculée le {u['calcule_le']}, règles déterministes)", ""]
-        L += [f"- {r['id']} ({r['niveau']}) : {r['motif']}" for r in u["regles"]] + [""]
+        L += [f"**Urgence : {u.get('niveau')}** — {u.get('action')}", "", f"Raison : {u.get('raison')} (évaluation du modèle, à confirmer par l'avocat)", ""]
     L += [f"**Employeur :** {f.get('employeur') or '—'}", "", f.get("resume_faits") or "", "", "## Chronologie", ""]
     L += [f"- {e.get('date')} : {e.get('evenement')}" for e in f.get("chronologie") or []] + ["", "## Pièces reçues", ""]
     L += [f"- [{d['category']}] {d['filename']} — {d['summary']}" for d in c["documents"]] or ["- aucune"]

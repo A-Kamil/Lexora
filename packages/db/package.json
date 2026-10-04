@@ -1,6 +1,6 @@
 {
   "name": "@lexora/db",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -16,7 +16,7 @@
     "drizzle"
   ],
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc -b",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/migrate.ts",
     "db:seed": "tsx src/seed.ts"
@@ -25,11 +25,10 @@
     "@lexora/shared": "workspace:*",
     "drizzle-orm": "0.44.6",
     "pg": "8.16.3",
-    "zod": "4.1.12"
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@types/pg": "8.15.5",
-    "drizzle-kit": "0.31.5",
-    "tsx": "4.21.0"
+    "drizzle-kit": "0.31.5"
   }
 }

@@ -7,8 +7,8 @@
 <p><b>Employeur :</b> {{ f.employeur or "—" }} · <b>Domaine :</b> {{ f.domaine or "—" }} · <b>Notification :</b> {{ fa.date_notification or "—" }}
 · <b>Entretien préalable :</b> {{ fa.date_entretien_prealable or "—" }}</p>
 {% if f.urgence %}<div style="background:var(--bg);border-radius:8px;padding:10px 14px;margin:8px 0">
-<b>{{ f.urgence.action }}</b> <span class="meta">— calculé le {{ f.urgence.calcule_le }} par des règles déterministes (aucun modèle)</span>
-<ul style="margin:6px 0 0">{% for r in f.urgence.regles %}<li><code>{{ r.id }}</code> <span class="pill {{ r.niveau }}">{{ r.niveau }}</span> {{ r.motif }}</li>{% endfor %}</ul></div>{% endif %}
+<b>{{ f.urgence.action }}</b> <span class="meta">— évaluation du modèle selon les critères du cabinet, à confirmer</span>
+<p style="margin:6px 0 0">{{ f.urgence.raison }}</p></div>{% endif %}
 <p>{{ f.resume_faits or "Dossier en cours de constitution." }}</p></div>
 <div class="grid">
 <div class="card"><h2>Chronologie</h2><table>{% for e in f.chronologie or [] %}<tr><td class="meta">{{ e.date }}</td><td>{{ e.evenement }}</td></tr>{% endfor %}</table></div>

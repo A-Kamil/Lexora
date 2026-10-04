@@ -1,9 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "tsBuildInfoFile": "./dist/.tsbuildinfo"
-  },
-  "include": ["src/**/*.ts"]
+  "compilerOptions": { "rootDir": "src", "outDir": "dist" },
+  "include": ["src/**/*.ts"],
+  // Colocated unit tests are type-checked by tsconfig.check.json, not compiled into
+  // the published dist.
+  "exclude": ["src/**/*.test.ts"]
 }

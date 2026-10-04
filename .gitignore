@@ -1,6 +1,7 @@
 node_modules/
 dist/
 *.tsbuildinfo
+.pnpm-store/
 
 # Secrets: the example is tracked explicitly, real env files never are.
 .env
@@ -12,5 +13,6 @@ dist/
 __pycache__/
 *.pyc
 
+.superpowers/
 coverage/
 .DS_Store
