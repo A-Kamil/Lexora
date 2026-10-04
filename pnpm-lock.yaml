@@ -23,6 +23,9 @@ importers:
       '@lexora/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@lexora/worker':
+        specifier: workspace:*
+        version: link:../worker
       fastify:
         specifier: 5.12.5
         version: 5.12.5
