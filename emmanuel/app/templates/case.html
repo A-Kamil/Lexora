@@ -1,9 +1,14 @@
 {% extends "base.html" %}{% block title %}Dossier {{ c.id }} — Lexora{% endblock %}{% block body %}
 {% set f = c.file or {} %}
 <div class="card"><h1>Dossier {{ c.id }} — {{ f.client or c.phone }}
-{% if f.urgence %}<span class="pill {{ f.urgence }}">urgence {{ f.urgence }}</span>{% endif %}</h1>
-<p><b>Employeur :</b> {{ f.employeur or "—" }} · <b>Domaine :</b> {{ f.domaine or "—" }} · <b>Notification :</b> {{ f.date_notification or "—" }}</p>
-{% if f.raison_urgence %}<p class="meta">{{ f.raison_urgence }} — délais à vérifier par l'avocat.</p>{% endif %}
+{% if f.urgence %}<span class="pill {{ f.urgence.niveau }}">urgence {{ f.urgence.niveau }}</span>{% endif %}
+<a href="/avocat/{{ c.id }}/recap.md" style="float:right;font-size:14px">Télécharger le récapitulatif</a></h1>
+{% set fa = f.faits or {} %}
+<p><b>Employeur :</b> {{ f.employeur or "—" }} · <b>Domaine :</b> {{ f.domaine or "—" }} · <b>Notification :</b> {{ fa.date_notification or "—" }}
+· <b>Entretien préalable :</b> {{ fa.date_entretien_prealable or "—" }}</p>
+{% if f.urgence %}<div style="background:var(--bg);border-radius:8px;padding:10px 14px;margin:8px 0">
+<b>{{ f.urgence.action }}</b> <span class="meta">— calculé le {{ f.urgence.calcule_le }} par des règles déterministes (aucun modèle)</span>
+<ul style="margin:6px 0 0">{% for r in f.urgence.regles %}<li><code>{{ r.id }}</code> <span class="pill {{ r.niveau }}">{{ r.niveau }}</span> {{ r.motif }}</li>{% endfor %}</ul></div>{% endif %}
 <p>{{ f.resume_faits or "Dossier en cours de constitution." }}</p></div>
 <div class="grid">
 <div class="card"><h2>Chronologie</h2><table>{% for e in f.chronologie or [] %}<tr><td class="meta">{{ e.date }}</td><td>{{ e.evenement }}</td></tr>{% endfor %}</table></div>
@@ -11,8 +16,18 @@
 <b>Pièces manquantes</b><ul>{% for p in f.pieces_manquantes or [] %}<li>{{ p }}</li>{% endfor %}</ul></div>
 </div>
 <div class="card"><h2>Pièces ({{ c.documents|length }})</h2><table>
-{% for d in c.documents %}<tr><td><span class="pill open">{{ d.category }}</span></td><td>{{ d.summary }}<div class="meta">{{ d.filename }}</div></td></tr>
+{% for d in c.documents %}<tr><td><span class="pill open">{{ d.category }}</span></td><td>{{ d.summary }}<div class="meta">{{ d.filename }}</div>
+<details><summary class="meta">Texte lu par l'OCR</summary><pre style="white-space:pre-wrap;font-size:12px">{{ (d.ocr_text or "")[:3000] }}</pre></details></td></tr>
 {% else %}<tr><td class="meta">Aucune pièce.</td></tr>{% endfor %}</table></div>
+<div class="card"><h2>Textes et sources trouvés par les agents</h2><table>
+{% for t in f.textes_applicables or [] %}<tr><td><b>{{ t.reference }}</b></td><td>{{ t.apport }}</td></tr>{% endfor %}
+{% for s in c.sources %}<tr><td><span class="pill open">{{ s.kind }}</span></td><td>{% if s.url %}<a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.title }}</a>{% else %}{{ s.title }}{% endif %}<div class="meta">{{ (s.extrait or "")[:220] }}</div></td></tr>
+{% else %}<tr><td class="meta">Aucune source pour l'instant.</td></tr>{% endfor %}</table></div>
+<div class="card"><h2>Journal des agents {% if c.journal_ok %}<span class="pill faible">chaîne vérifiée</span>{% else %}<span class="pill haute">chaîne rompue</span>{% endif %}</h2>
+<table><tr><th>Heure</th><th>Agent</th><th>Action</th><th>Décision</th><th>Motif</th><th>ms</th></tr>
+{% for j in c.journal %}<tr><td class="meta">{{ j.ts|ts }}</td><td>{{ j.agent }}</td><td><code>{{ j.tool }}</code></td>
+<td><span class="pill {{ {'allow':'faible','redact':'moyenne','refuse':'haute'}[j.decision] }}">{{ {'allow':'autorisé','redact':'caviardé','refuse':'refusé'}[j.decision] }}</span></td>
+<td class="meta">{{ j.reason }}</td><td class="meta">{{ j.ms }}</td></tr>{% else %}<tr><td colspan="6" class="meta">Aucune action.</td></tr>{% endfor %}</table></div>
 <div class="card"><h2>Conversation WhatsApp (contexte)</h2>
 {% for m in c.messages %}<div class="msg {{ m.direction }}">{% if m.kind != "text" %}<span class="meta">[{{ m.kind }}]</span> {% endif %}{{ m.text }}</div>{% endfor %}</div>
 {% endblock %}

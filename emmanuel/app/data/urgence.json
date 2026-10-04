@@ -1,0 +1,14 @@
+{
+  "_lisez_moi": "Règles d'urgence appliquées par du code, sans modèle. Le modèle extrait seulement les faits. Toutes les valeurs juridiques sont À VALIDER PAR LE JURISTE avant usage réel. Toutes les règles déclenchées sont listées ; le niveau le plus élevé l'emporte.",
+  "delai_contestation_jours": 365,
+  "delai_contestation_reference": "à valider par le juriste (Code du travail, art. L1471-1)",
+  "alerte_avant_fin_delai_jours": 60,
+  "notification_recente_jours": 30,
+  "entretien_imminent_jours": 10,
+  "niveaux": {
+    "immediat": {"rang": 3, "action": "Appeler le client aujourd'hui"},
+    "48h":      {"rang": 2, "action": "Rappeler le client sous 48 h"},
+    "normal":   {"rang": 1, "action": "Réponse écrite, rendez-vous à planifier"}
+  },
+  "signaux_48h": ["harcelement", "discrimination", "accident_du_travail", "maladie", "grossesse", "lanceur_d_alerte", "surveillance_messages"]
+}

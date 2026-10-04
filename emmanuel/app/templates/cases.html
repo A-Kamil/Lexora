@@ -1,10 +1,11 @@
 {% extends "base.html" %}{% block title %}Dossiers — Lexora{% endblock %}{% block body %}
 <div class="card"><h1>Dossiers entrants</h1>
-<table><tr><th>#</th><th>Client</th><th>Employeur</th><th>Urgence</th><th>Statut</th><th>Mis à jour</th></tr>
+<table><tr><th>#</th><th>Client</th><th>Employeur</th><th>Urgence</th><th>Action</th><th>Statut</th><th>Mis à jour</th></tr>
 {% for c in cases %}{% set f = (c.summary_json and c.summary_json|fromjson) or {} %}
 <tr><td><a href="/avocat/{{ c.id }}">{{ c.id }}</a></td><td>{{ f.client or c.phone }}</td><td>{{ f.employeur or "—" }}</td>
-<td>{% if f.urgence %}<span class="pill {{ f.urgence }}">{{ f.urgence }}</span>{% endif %}</td>
+<td>{% if f.urgence %}<span class="pill {{ f.urgence.niveau }}">{{ f.urgence.niveau }}</span>{% endif %}</td>
+<td class="meta">{{ f.urgence.action if f.urgence else "" }}</td>
 <td><span class="pill {{ c.status }}">{{ "transmis" if c.status == "sent_to_lawyer" else "en cours" }}</span></td>
 <td class="meta">{{ c.updated_at|ts }}</td></tr>
-{% else %}<tr><td colspan="6" class="meta">Aucun dossier pour l'instant.</td></tr>{% endfor %}
+{% else %}<tr><td colspan="7" class="meta">Aucun dossier pour l'instant.</td></tr>{% endfor %}
 </table></div>{% endblock %}

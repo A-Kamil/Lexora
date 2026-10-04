@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block title %}Dépôt de pièces — Lexora{% endblock %}{% block body %}
+<div class="card"><h1>Déposer vos documents</h1>
+{% if not ok %}<p>Ce lien a expiré. Écrivez-nous sur WhatsApp pour en recevoir un nouveau.</p>
+{% else %}
+{% if done %}<p class="pill faible">Documents reçus, merci. Ils sont lus et classés pour votre avocat.</p>{% endif %}
+<p class="meta">PDF, Word, photos. 20 Mo maximum par fichier. Vos documents ne sont transmis qu'au cabinet.</p>
+<form method="post" enctype="multipart/form-data" style="display:flex;gap:8px;flex-wrap:wrap">
+<input type="file" name="files" multiple accept="application/pdf,image/*,.docx" required><input type="submit" value="Envoyer"></form>
+{% endif %}</div>{% endblock %}
