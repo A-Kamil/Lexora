@@ -9,6 +9,7 @@ import type {
   ResolveResult,
   SavedAnalysis,
   StoredDocument,
+  StoredDocumentContent,
   StoredMessage,
   Urgency,
   RetrievedDocumentChunk,
@@ -200,18 +201,48 @@ export class MemoryStore implements CaseStore {
     return this.messages.find((m) => m.id === id) ?? null;
   }
 
+  async listCaseContexts(): Promise<CaseContext[]> {
+    const contexts = await Promise.all(
+      this.cases
+        .filter((caseRecord) => this.messages.some((message) => message.caseId === caseRecord.id))
+        .map((caseRecord) => this.getCaseContext(caseRecord.id)),
+    );
+    return contexts.filter((context): context is CaseContext => context !== null);
+  }
+
   async getCaseContext(caseId: string): Promise<CaseContext | null> {
     const c = this.cases.find((x) => x.id === caseId);
     if (!c) return null;
     const client = this.people.find((p) => p.id === c.clientId)!;
     const lawyer = this.people.find((p) => p.id === c.lawyerId) ?? null;
-    const { clientId: _c, lawyerId: _l, open: _o, ...ref } = c;
     return {
-      case: ref,
+      case: {
+        id: c.id,
+        title: c.title,
+        jurisdiction: c.jurisdiction,
+        language: c.language,
+        timezone: c.timezone,
+        status: c.open ? 'open' : 'closed',
+      },
       client,
       lawyer,
       messages: this.messages.filter((m) => m.caseId === caseId),
       documents: this.documents.filter((d) => d.caseId === caseId),
+    };
+  }
+
+  async getDocumentContent(
+    caseId: string,
+    documentId: string,
+  ): Promise<StoredDocumentContent | null> {
+    const document = this.documents.find(
+      (item) => item.id === documentId && item.caseId === caseId,
+    );
+    if (!document?.originalBytes) return null;
+    return {
+      bytes: document.originalBytes,
+      mimeType: document.mimeType,
+      filename: document.originalFilename ?? document.documentType ?? 'document',
     };
   }
 

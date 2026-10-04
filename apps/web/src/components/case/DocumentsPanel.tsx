@@ -7,6 +7,7 @@ import {
   formatDate,
   formatDateTime,
 } from '@/lib/legal';
+import { documentContentUrl } from '@/lib/api';
 import type { CaseDocument, DocumentCategory } from '@/types/lexora';
 
 function statusClass(status: CaseDocument['status']): string {
@@ -17,13 +18,20 @@ function statusClass(status: CaseDocument['status']): string {
 
 function DocumentModal({
   document: d,
+  caseId,
   timezone,
   onClose,
 }: {
   document: CaseDocument;
+  caseId: string;
   timezone: string;
   onClose: () => void;
 }) {
+  const originalUrl = documentContentUrl(caseId, d.id);
+  const canOpenOriginal = d.status === 'ready';
+  const isPdf = d.mimeType === 'application/pdf';
+  const isImage = /^image\/(gif|jpeg|png|webp)$/.test(d.mimeType);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -48,14 +56,45 @@ function DocumentModal({
                 {d.mimeType}
               </p>
             </div>
-            <button type="button" className="toolbar-btn" onClick={onClose} autoFocus>
-              Fermer
-            </button>
+            <div className="modal-actions">
+              {canOpenOriginal ? (
+                <a className="toolbar-btn" href={originalUrl} target="_blank" rel="noreferrer">
+                  Ouvrir l’original
+                </a>
+              ) : null}
+              <button type="button" className="toolbar-btn" onClick={onClose} autoFocus>
+                Fermer
+              </button>
+            </div>
           </div>
 
           <div className="modal-body">
             <span className={statusClass(d.status)}>{DOCUMENT_STATUS_LABEL[d.status]}</span>
             {d.errorReason ? <p style={{ color: 'var(--critical)' }}>▲ {d.errorReason}</p> : null}
+
+            {canOpenOriginal && isPdf ? (
+              <iframe
+                className="document-preview"
+                src={originalUrl}
+                title={`Original — ${d.name}`}
+              />
+            ) : null}
+
+            {canOpenOriginal && isImage ? (
+              <img
+                className="document-preview document-preview--image"
+                src={originalUrl}
+                alt={d.name}
+              />
+            ) : null}
+
+            {canOpenOriginal && !isPdf && !isImage ? (
+              <p>
+                <a className="toolbar-btn" href={originalUrl}>
+                  Télécharger l’original
+                </a>
+              </p>
+            ) : null}
 
             {d.summary ? (
               <>
@@ -87,17 +126,11 @@ function DocumentModal({
               </>
             ) : null}
 
-            {d.extractedText ? (
-              <>
-                <h3 className="font-serif sub-title">Texte extrait</h3>
-                <pre className="extracted">{d.extractedText}</pre>
-              </>
+            {!canOpenOriginal ? (
+              <p className="disclaimer">
+                L’original sera disponible une fois le traitement terminé.
+              </p>
             ) : null}
-
-            <p className="disclaimer">
-              L’original est conservé dans un espace privé ; son ouverture se fera par lien
-              temporaire sécurisé lorsque le stockage sera branché.
-            </p>
           </div>
         </div>
       </div>
@@ -107,9 +140,11 @@ function DocumentModal({
 
 /** Documents received from the client, grouped by type, newest first. */
 export function DocumentsPanel({
+  caseId,
   documents,
   timezone,
 }: {
+  caseId: string;
   documents: CaseDocument[];
   timezone: string;
 }) {
@@ -153,7 +188,12 @@ export function DocumentsPanel({
         ))
       )}
       {open ? (
-        <DocumentModal document={open} timezone={timezone} onClose={() => setOpenId(null)} />
+        <DocumentModal
+          caseId={caseId}
+          document={open}
+          timezone={timezone}
+          onClose={() => setOpenId(null)}
+        />
       ) : null}
     </section>
   );

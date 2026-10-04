@@ -1,5 +1,11 @@
 import { UrgencyTag } from '@/components/UrgencyTag';
-import { ANALYSIS_STATUS_LABEL, ESCALATION, URGENCY, formatDateTime } from '@/lib/legal';
+import {
+  ANALYSIS_STATUS_LABEL,
+  ESCALATION,
+  URGENCY,
+  compactText,
+  formatDateTime,
+} from '@/lib/legal';
 import type { CaseDetail } from '@/types/lexora';
 
 /** Verdict of the case: urgency, why, and whether the alert reached the lawyer. */
@@ -19,6 +25,9 @@ export function UrgencyBand({ detail }: { detail: CaseDetail }) {
   const { result } = record;
   const u = URGENCY[result.urgency];
   const escalation = detail.escalation ? ESCALATION[detail.escalation.status] : null;
+  const issue = compactText(result.issue, 180);
+  const reason = compactText(result.urgencyReason, 120);
+  const shortened = issue !== result.issue || reason !== result.urgencyReason;
 
   return (
     <section
@@ -43,11 +52,18 @@ export function UrgencyBand({ detail }: { detail: CaseDetail }) {
         </div>
 
         <div className="urgency-band__text">
-          <p className="urgency-band__issue">{result.issue}</p>
+          <p className="urgency-band__issue">{issue}</p>
           <p className="urgency-band__reason">
-            <strong>Pourquoi : </strong>
-            {result.urgencyReason}
+            <strong>Urgence : </strong>
+            {reason}
           </p>
+          {shortened ? (
+            <details className="urgency-band__details">
+              <summary>Voir l’analyse complète</summary>
+              <p>{result.issue}</p>
+              <p>{result.urgencyReason}</p>
+            </details>
+          ) : null}
           {record.status === 'fallback' ? (
             <p className="urgency-band__flag" style={{ color: 'var(--critical)' }}>
               ◆ {ANALYSIS_STATUS_LABEL.fallback}

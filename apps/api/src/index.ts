@@ -119,10 +119,10 @@ await app.register(registerKapsoWebhook, {
     log: app.log,
   }),
 });
+await app.register(readApiRoutes, { store });
 // The lightweight jury screen is kept for the explicit in-memory demo mode.
 if (memoryStore) {
   await app.register(demoRoutes, { store: memoryStore });
-  await app.register(readApiRoutes, { store: memoryStore });
 }
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

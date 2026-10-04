@@ -190,6 +190,48 @@ body {
   background: repeating-linear-gradient(-45deg, var(--warning) 0 4px, var(--warning-pale) 4px 8px);
 }
 
+.urgent-cases-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 48px;
+}
+.urgent-cases-bar__summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+}
+.urgent-cases-bar__count,
+.urgent-cases-bar__actions {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.urgent-cases-bar__issue {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.urgent-cases-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .urgent-cases-bar {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px 20px;
+  }
+  .urgent-cases-bar__actions {
+    justify-self: start;
+  }
+}
+
 /* ── Focus ring — sober, high contrast ─────────────────────────────── */
 :focus-visible {
   outline: 2px solid var(--ink);
@@ -505,21 +547,9 @@ body.night .enter-btn:hover {
   margin-top: 28px;
 }
 .case-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr);
-  gap: 28px;
-  align-items: start;
-}
-.case-grid__col {
   display: flex;
   flex-direction: column;
   gap: 28px;
-  min-width: 0;
-}
-@media (max-width: 1280px) {
-  .case-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 .panel {
   padding: 28px 32px;
@@ -556,6 +586,15 @@ body.night .enter-btn:hover {
 .urgency-band__reason {
   margin: 12px 0 0;
   color: var(--ink-soft);
+}
+.urgency-band__details {
+  margin-top: 12px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+.urgency-band__details summary {
+  cursor: pointer;
+  font-weight: 600;
 }
 .urgency-band__facts {
   margin: 0;
@@ -746,20 +785,27 @@ body.night .modal-curtain {
   align-items: flex-start;
   gap: 24px;
 }
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
 .modal-body {
   margin-top: 20px;
 }
-.extracted {
-  margin: 0;
-  padding: 16px;
-  white-space: pre-wrap;
-  font-family: var(--sans);
-  font-size: 15px;
-  line-height: 1.6;
-  background: var(--line-soft);
+.document-preview {
+  width: 100%;
+  height: min(65svh, 760px);
+  margin-top: 20px;
+  border: 1px solid var(--line);
   border-radius: 8px;
+  background: white;
 }
-
+.document-preview--image {
+  height: auto;
+  max-height: 65svh;
+  object-fit: contain;
+}
 @media (max-width: 720px) {
   .page-body {
     padding: 24px 20px 48px;

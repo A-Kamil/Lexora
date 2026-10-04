@@ -61,24 +61,20 @@ function CaseView({ caseId }: { caseId: string }) {
       <div className="case-bands">
         <UrgencyBand detail={data} />
         <div className="case-grid">
-          <div className="case-grid__col">
-            <AnalysisPanel result={data.analysis?.result ?? null} />
+          <AnalysisPanel result={data.analysis?.result ?? null} />
+          <DocumentsPanel caseId={data.id} documents={data.documents} timezone={data.timezone} />
+          <MessageThread
+            messages={data.messages}
+            timezone={data.timezone}
+            documentNames={documentNames}
+          />
+          {(data.analysis?.legalSources?.length ?? 0) > 0 ? (
             <LegalSourcesPanel
               sources={data.analysis?.legalSources ?? []}
               audit={data.analysis?.legalAudit ?? []}
             />
-            <DeadlinesPanel deadlines={data.deadlines} timezone={data.timezone} />
-          </div>
-          <div className="case-grid__col">
-            <DocumentsPanel documents={data.documents} timezone={data.timezone} />
-          </div>
-          <div className="case-grid__col">
-            <MessageThread
-              messages={data.messages}
-              timezone={data.timezone}
-              documentNames={documentNames}
-            />
-          </div>
+          ) : null}
+          <DeadlinesPanel deadlines={data.deadlines} timezone={data.timezone} />
         </div>
       </div>
     </main>

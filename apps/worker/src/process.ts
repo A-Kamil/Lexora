@@ -69,7 +69,7 @@ export type ProcessResult =
 type DeliveryStatus = 'sent' | 'simulated' | 'failed';
 
 const DOCUMENT_MIME = new Set(['application/pdf', 'image/jpeg', 'image/png']);
-const ALERT_MAX = 1200;
+const ALERT_MAX = 600;
 const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 const RETRIEVAL_CHAR_BUDGET = 12_000;
 /** Fallback when the intake agent fails: the client is never left without an answer. */
@@ -104,13 +104,13 @@ export function formatLawyerAlert(p: {
   const lines = [
     `LEXORA — ${p.urgency}`,
     `${clip(p.clientName, 120)} — ${clip(p.caseTitle, 160)}`,
-    clip(p.issue, 300),
-    `Pourquoi : ${clip(p.urgencyReason, 300)}`,
+    clip(p.issue, 180),
+    `Urgence : ${clip(p.urgencyReason, 120)}`,
   ];
-  if (p.documents?.length) lines.push(`Pièces reçues : ${clip(p.documents.join(', '), 150)}`);
-  if (p.missing?.length) lines.push(`À vérifier : ${clip(p.missing.slice(0, 3).join(' ; '), 200)}`);
+  if (p.documents?.length) lines.push(`Pièces : ${clip(p.documents.join(', '), 100)}`);
+  if (p.missing?.length) lines.push(`À vérifier : ${clip(p.missing.slice(0, 2).join(' ; '), 120)}`);
   if (p.callback) lines.push(`Rappeler : ${p.callback}`);
-  lines.push('À faire : rappeler le client maintenant. Dossier complet sur le tableau de bord.');
+  lines.push('Action : rappeler le client. Détails dans Lexora.');
   return clip(lines.join('\n'), ALERT_MAX);
 }
 

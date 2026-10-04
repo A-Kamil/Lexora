@@ -171,3 +171,11 @@ export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
 }
+
+export function compactText(text: string, max: number): string {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (clean.length <= max) return clean;
+  const slice = clean.slice(0, max - 1);
+  const boundary = slice.lastIndexOf(' ');
+  return `${slice.slice(0, boundary > max / 2 ? boundary : max - 1)}…`;
+}

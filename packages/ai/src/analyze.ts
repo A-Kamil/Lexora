@@ -83,6 +83,14 @@ export function buildContext(input: AnalysisInput) {
 
 const jsonSchema = z.toJSONSchema(CaseAnalysisSchema);
 
+function compact(text: string, max: number): string {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (clean.length <= max) return clean;
+  const slice = clean.slice(0, max - 1);
+  const boundary = slice.lastIndexOf(' ');
+  return `${slice.slice(0, boundary > max / 2 ? boundary : max - 1)}…`;
+}
+
 function fallback(reason: string): CaseAnalysis {
   return {
     issue: 'Automated assessment unavailable',
@@ -117,7 +125,18 @@ export async function analyzeCase(client: Mistral, input: AnalysisInput, model: 
       );
       raw = textOf(res.choices?.[0]?.message?.content);
       const parsed = CaseAnalysisSchema.safeParse(JSON.parse(raw));
-      if (parsed.success) return { status: 'ok', analysis: parsed.data, ...base };
+      if (parsed.success) return {
+        status: 'ok',
+        analysis: {
+          ...parsed.data,
+          issue: compact(parsed.data.issue, 180),
+          urgencyReason: compact(parsed.data.urgencyReason, 120),
+          recommendedActions: parsed.data.recommendedActions
+            .slice(0, 3)
+            .map((action) => compact(action, 80)),
+        },
+        ...base,
+      };
       messages.push({ role: 'assistant', content: raw }, { role: 'user', content: `Invalid JSON for the schema: ${parsed.error.message.slice(0, 500)}. Return corrected JSON only.` });
     } catch (e) {
       if (e instanceof SyntaxError) {

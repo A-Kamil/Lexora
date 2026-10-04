@@ -1,4 +1,5 @@
 import type { CaseAnalysis } from '@/types/lexora';
+import { compactText } from '@/lib/legal';
 
 function List({ title, items, empty }: { title: string; items: string[]; empty: string }) {
   return (
@@ -29,7 +30,9 @@ export function AnalysisPanel({ result }: { result: CaseAnalysis | null }) {
         <>
           <List
             title="Actions recommandées"
-            items={result.recommendedActions}
+            items={result.recommendedActions
+              .slice(0, 3)
+              .map((action) => compactText(action, 80))}
             empty="Aucune action recommandée."
           />
           <List

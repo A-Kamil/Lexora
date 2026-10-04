@@ -5,7 +5,7 @@
  */
 
 import { Link } from 'react-router-dom';
-import { ESCALATION, URGENCY, isUrgent } from '@/lib/legal';
+import { ESCALATION, URGENCY, compactText, isUrgent } from '@/lib/legal';
 import { useCases } from '@/state/useCases';
 import { UrgencyTag } from './UrgencyTag';
 
@@ -28,26 +28,23 @@ export function UrgentCasesBar() {
   return (
     <div
       role="alert"
+      className="urgent-cases-bar"
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 16,
-        flexWrap: 'wrap',
-        padding: '12px 48px',
         background: critical ? 'var(--critical-pale)' : 'var(--warning-pale)',
         color: critical ? 'var(--critical)' : 'var(--warning)',
         borderBottom: `1px solid ${critical ? 'var(--critical)' : 'var(--warning)'}`,
       }}
     >
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, fontWeight: 600 }}>
+      <span className="urgent-cases-bar__summary">
         <UrgencyTag urgency={top.urgency} showLabel={false} />
-        {urgent.length === 1 ? '1 dossier urgent' : `${urgent.length} dossiers urgents`}
-        <span style={{ fontWeight: 400 }}>
-          — {top.clientName} : {top.issue}
+        <span className="urgent-cases-bar__count">
+          {urgent.length === 1 ? '1 dossier urgent' : `${urgent.length} dossiers urgents`}
+        </span>
+        <span className="urgent-cases-bar__issue">
+          — {top.clientName} : {compactText(top.issue, 110)}
         </span>
       </span>
-      <span style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <span className="urgent-cases-bar__actions">
         {unreachable.length > 0 ? (
           <span style={{ fontSize: 14 }}>
             {unreachable.length} alerte{unreachable.length > 1 ? 's' : ''} WhatsApp à vérifier

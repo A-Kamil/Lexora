@@ -10,6 +10,7 @@ import type {
   ResolveResult,
   SavedAnalysis,
   StoredDocument,
+  StoredDocumentContent,
   StoredMessage,
   Urgency,
 } from '@lexora/shared/pipeline';
@@ -31,7 +32,7 @@ import {
 import { getLatestCaseAnalysis, saveAnalysis } from './analyses.js';
 import { findMessageByProviderId, saveMessage } from './messages.js';
 import { findPersonById, findPersonByPhone, touchWhatsappInbound } from './people.js';
-import { analyses, caseMembers, cases, messages, people } from './schema.js';
+import { analyses, caseMembers, cases, documents, messages, people } from './schema.js';
 
 function personForPipeline(person: Awaited<ReturnType<typeof findPersonById>>): Person {
   if (!person) throw new Error('person not found');
@@ -231,6 +232,15 @@ export class PostgresCaseStore implements CaseStore {
     return rows[0] ? messageForPipeline(rows[0]) : null;
   }
 
+  async listCaseContexts(): Promise<CaseContext[]> {
+    const rows = await this.db
+      .selectDistinct({ id: cases.id })
+      .from(cases)
+      .innerJoin(messages, eq(messages.caseId, cases.id));
+    const contexts = await Promise.all(rows.map((row) => this.getCaseContext(row.id)));
+    return contexts.filter((context): context is CaseContext => context !== null);
+  }
+
   async getCaseContext(caseId: string): Promise<CaseContext | null> {
     const caseRecord = await findCaseById(this.db, caseId);
     if (!caseRecord) return null;
@@ -259,6 +269,7 @@ export class PostgresCaseStore implements CaseStore {
         jurisdiction: caseRecord.jurisdiction,
         language: caseRecord.language,
         timezone: caseRecord.timezone,
+        status: caseRecord.status,
       },
       client: personForPipeline(client),
       lawyer: lawyer ? personForPipeline(lawyer) : null,
@@ -269,6 +280,7 @@ export class PostgresCaseStore implements CaseStore {
         messageId: document.messageId,
         mediaIndex: document.mediaIndex,
         mimeType: document.mimeType,
+        byteSize: document.byteSize,
         status:
           document.status === 'ready'
             ? 'ready'
@@ -279,6 +291,28 @@ export class PostgresCaseStore implements CaseStore {
         documentType: document.metadata.documentType ?? null,
         summary: document.metadata.summary ?? null,
       })),
+    };
+  }
+
+  async getDocumentContent(
+    caseId: string,
+    documentId: string,
+  ): Promise<StoredDocumentContent | null> {
+    const rows = await this.db
+      .select({
+        bytes: documents.originalBytes,
+        mimeType: documents.mimeType,
+        filename: documents.originalFilename,
+      })
+      .from(documents)
+      .where(and(eq(documents.id, documentId), eq(documents.caseId, caseId)))
+      .limit(1);
+    const document = rows[0];
+    if (!document?.bytes) return null;
+    return {
+      bytes: document.bytes,
+      mimeType: document.mimeType,
+      filename: document.filename ?? 'document',
     };
   }
 
@@ -360,7 +394,15 @@ export class PostgresCaseStore implements CaseStore {
 
   async getLatestAnalysis(caseId: string): Promise<unknown> {
     const analysis = await getLatestCaseAnalysis(this.db, caseId);
-    return analysis ? { analysis: analysis.result } : null;
+    return analysis
+      ? {
+          id: analysis.id,
+          analysis: analysis.result,
+          status: analysis.status,
+          analyzedAt: analysis.createdAt,
+          includedDocumentIds: analysis.contextDocumentIds,
+        }
+      : null;
   }
 
   async lastAlertedUrgency(caseId: string): Promise<Urgency | null> {

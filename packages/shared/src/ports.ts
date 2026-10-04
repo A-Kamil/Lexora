@@ -19,6 +19,7 @@ export interface CaseRef {
   jurisdiction: string;
   language: string;
   timezone: string;
+  status?: 'open' | 'closed';
 }
 
 export type ResolveResult =
@@ -59,6 +60,7 @@ export interface StoredDocument {
   caseId: string;
   messageId: string;
   mimeType: string;
+  byteSize?: number | null;
   status: 'pending' | 'ready' | 'failed';
   extractedText: string | null;
   documentType: string | null;
@@ -66,6 +68,12 @@ export interface StoredDocument {
   mediaIndex?: number;
   originalBytes?: Uint8Array;
   originalFilename?: string;
+}
+
+export interface StoredDocumentContent {
+  bytes: Uint8Array;
+  mimeType: string;
+  filename: string;
 }
 
 export interface RetrievedDocumentChunk {
@@ -106,7 +114,9 @@ export interface CaseStore {
   setMessageTranscript(messageId: string, transcript: string): Promise<void>;
   saveDocument(doc: Omit<StoredDocument, 'id'>): Promise<StoredDocument>;
   getMessage(messageId: string): Promise<StoredMessage | null>;
+  listCaseContexts(): Promise<CaseContext[]>;
   getCaseContext(caseId: string): Promise<CaseContext | null>;
+  getDocumentContent(caseId: string, documentId: string): Promise<StoredDocumentContent | null>;
   /** Idempotent on triggerKey: returns the existing analysis id if already saved. */
   saveAnalysis(a: SavedAnalysis): Promise<{ analysisId: string; created: boolean }>;
   saveOutbound(input: {
