@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
-  SEED_IDS,
   applyMigrations,
   createConversation,
   createDb,
@@ -25,9 +24,6 @@ import {
   saveMessage,
   schema,
   setMessageDeliveryStatus,
-  seedDemoFixtures,
-  SEED_CLIENT_PHONE,
-  SEED_LAWYER_PHONE,
   updateDocumentState,
   updateEscalation,
   withTransaction,
@@ -39,7 +35,6 @@ import {
   ESCALATION_STATUSES,
   IsoDateTimeSchema,
   UuidSchema,
-  normalizePhone,
   type CaseAnalysis,
 } from '@lexora/shared';
 import { eq, sql } from 'drizzle-orm';
@@ -273,87 +268,6 @@ describe('migrations', () => {
       sql`SELECT count(*)::text AS count FROM information_schema.tables WHERE table_schema = 'public'`,
     );
     expect(tables.rows[0]?.count).toBe('9');
-  });
-});
-
-describe('seed', () => {
-  it('fails loudly instead of half-applying when its reserved number is taken', async () => {
-    // Rolled back, so the next test still sees an unseeded database.
-    const rejection = await expectRejected(() =>
-      withTransaction(db, async (tx) => {
-        await tx.insert(schema.people).values({
-          displayName: 'Impostor holding the seeded number',
-          phoneE164: '+999700000001',
-          role: 'client',
-        });
-        await seedDemoFixtures(tx, {});
-      }),
-    );
-    // Not a confusing downstream foreign-key error: the actual collision.
-    expect(rejection.constraint).toBe('people_phone_e164_key');
-
-    const leftovers = await db
-      .select({ id: schema.cases.id })
-      .from(schema.cases)
-      .where(eq(schema.cases.id, SEED_IDS.case));
-    expect(leftovers).toHaveLength(0);
-  });
-
-  it('inserts the fictional fixtures once and is a no-op on a second run', async () => {
-    const first = await withTransaction(db, (tx) => seedDemoFixtures(tx, {}));
-    expect(first).toEqual({ inserted: true, caseId: SEED_IDS.case });
-
-    const second = await withTransaction(db, (tx) => seedDemoFixtures(tx, {}));
-    expect(second).toEqual({ inserted: false, caseId: SEED_IDS.case });
-
-    const counts = await db.execute<{ people: string; messages: string; documents: string }>(
-      sql`SELECT
-            (SELECT count(*)::text FROM people) AS people,
-            (SELECT count(*)::text FROM messages WHERE case_id = ${SEED_IDS.case}) AS messages,
-            (SELECT count(*)::text FROM documents WHERE case_id = ${SEED_IDS.case}) AS documents`,
-    );
-    expect(counts.rows[0]?.messages).toBe('3');
-    expect(counts.rows[0]?.documents).toBe('2');
-
-    // The seed produces no analysis and no escalation: those must come from the pipeline.
-    const derived = await db.execute<{ analyses: string; escalations: string }>(
-      sql`SELECT (SELECT count(*)::text FROM analyses) AS analyses,
-                 (SELECT count(*)::text FROM escalations) AS escalations`,
-    );
-    expect(derived.rows[0]).toEqual({ analyses: '0', escalations: '0' });
-  });
-
-  it('seeds one primary lawyer and a confirmed, explicitly fictional deadline', async () => {
-    const context = await getCaseContext(db, SEED_IDS.case);
-    expect(context.primaryLawyer?.personId).toBe(SEED_IDS.lawyerPerson);
-    expect(context.confirmedDeadlines).toHaveLength(1);
-    expect(context.confirmedDeadlines[0]?.title).toContain('FICTIONAL');
-    expect(context.unverifiedDeadlines).toHaveLength(0);
-    expect(context.readyDocuments).toHaveLength(2);
-  });
-
-  it('seeds numbers the application normalizer actually accepts', () => {
-    // The column's regex is not the only gate. A fixture that satisfies it but is
-    // rejected by `normalizePhone` would be unroutable: `findPersonByPhone` normalizes
-    // before it queries, so it could never match the seeded row.
-    for (const phone of [SEED_CLIENT_PHONE, SEED_LAWYER_PHONE]) {
-      expect(normalizePhone(phone)).toBe(phone);
-      // Also stable under a channel prefix, which is how Twilio delivers it.
-      expect(normalizePhone(`whatsapp:${phone}`)).toBe(phone);
-    }
-  });
-
-  it('routes a seeded number end to end', async () => {
-    const client = await findPersonByPhone(db, `whatsapp:${SEED_CLIENT_PHONE}`);
-    expect(client?.id).toBe(SEED_IDS.clientPerson);
-    const lookup = await getActiveCase(db, SEED_IDS.clientPerson);
-    expect(lookup.kind).toBe('found');
-  });
-
-  it('seeds numbers in the reserved +999 range, which reach no real subscriber', async () => {
-    const rows = await db.select({ phone: schema.people.phoneE164 }).from(schema.people);
-    const seeded = rows.filter((r) => r.phone.startsWith('+999'));
-    expect(seeded.length).toBeGreaterThanOrEqual(2);
   });
 });
 

@@ -1,12 +1,5 @@
 import Fastify from 'fastify';
-import {
-  applyMigrations,
-  createDb,
-  PostgresCaseStore,
-  seedDemoFixtures,
-  setSeededLawyerPhone,
-  withTransaction,
-} from '@lexora/db';
+import { applyMigrations, createDb, PostgresCaseStore } from '@lexora/db';
 import { parseApiEnv } from '@lexora/shared';
 import { MemoryStore, type CaseStore } from '@lexora/shared/pipeline';
 import {
@@ -19,7 +12,6 @@ import {
 import { parseDemoConfig } from './demo-config.js';
 import { demoRoutes } from './demo-page.js';
 import { readApiRoutes } from './read-api.js';
-import { applyDemoPhones } from './demo-phones.js';
 import { createIncomingMessageHandler } from './incoming-message-handler.js';
 import { InProcessQueue } from './inprocess-queue.js';
 import { MediaCache } from './media-cache.js';
@@ -45,37 +37,14 @@ const kapsoClient = createKapsoClient({
 // DATA_MODE=memory: in-memory store saved to a JSON file (survives restarts); serves /demo and the dashboard API.
 const memoryStore =
   process.env.DATA_MODE === 'memory'
-    ? ((demo.storeFile ? loadStore(demo.storeFile) : null) ?? MemoryStore.seeded())
+    ? ((demo.storeFile ? loadStore(demo.storeFile) : null) ?? new MemoryStore())
     : null;
 if (!memoryStore) await applyMigrations(config.databaseUrl);
 const database = memoryStore
   ? null
   : createDb({ connectionString: config.databaseUrl, maxConnections: 5 });
-if (database) await withTransaction(database.db, (tx) => seedDemoFixtures(tx, process.env));
-// Postgres mode: the seeded lawyer gets the real demo phone, otherwise alerts go to an unroutable +999 number.
-if (database && demo.demoLawyerPhone) {
-  if (!demo.allowedNumbers.has(demo.demoLawyerPhone)) {
-    console.error('Refusing to start: DEMO_LAWYER_PHONE must also be listed in DEMO_ALLOWED_NUMBERS.');
-    process.exit(1);
-  }
-  try {
-    await setSeededLawyerPhone(database.db, demo.demoLawyerPhone);
-  } catch (err) {
-    // Unique phone: this number already wrote in as a client before. Reset the demo database (docker compose down -v).
-    console.error(`Refusing to start: DEMO_LAWYER_PHONE could not be given to the lawyer (${(err as Error).message}).`);
-    process.exit(1);
-  }
-}
 const store: CaseStore = memoryStore ?? new PostgresCaseStore(database!.db);
-let demoPhones = false;
-if (memoryStore) {
-  try {
-    demoPhones = applyDemoPhones(memoryStore, demo);
-  } catch (err) {
-    console.error(`Refusing to start: ${(err as Error).message}`);
-    process.exit(1);
-  }
-}
+const demoPhones = false;
 
 const media = new MediaCache();
 const workerDeps = createDeps(workerConfig, store, jsonLogger, {

@@ -17,8 +17,7 @@
     "test": "vitest run --config vitest.config.ts",
     "test:integration": "pnpm run build && vitest run --config vitest.integration.config.ts",
     "db:generate": "pnpm --filter @lexora/db run db:generate",
-    "db:migrate": "pnpm --filter @lexora/db run db:migrate",
-    "db:seed": "pnpm --filter @lexora/db run db:seed"
+    "db:migrate": "pnpm --filter @lexora/db run db:migrate"
   },
   "devDependencies": {
     "@eslint/js": "9.39.1",

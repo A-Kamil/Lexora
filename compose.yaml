@@ -2,7 +2,7 @@
 #
 # The API and worker containers belong to Task 10; this file deliberately stops
 # at the database so `docker compose up -d db` stays the single prerequisite for
-# `pnpm db:migrate` and `pnpm db:seed`.
+# `pnpm db:migrate`.
 name: lexora
 
 services:

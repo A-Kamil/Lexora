@@ -29,7 +29,7 @@ export {
   OwnershipViolationError,
 } from './errors.js';
 
-export { findPersonById, findPersonByPhone, setSeededLawyerPhone, toPerson, touchWhatsappInbound } from './people.js';
+export { findPersonById, findPersonByPhone, toPerson, touchWhatsappInbound } from './people.js';
 
 export {
   findCaseById,
@@ -107,13 +107,6 @@ export {
 } from './escalations.js';
 
 export { applyMigrations } from './migrate.js';
-export {
-  SEED_CLIENT_PHONE,
-  SEED_IDS,
-  SEED_LAWYER_PHONE,
-  seedDemoFixtures,
-  type SeedResult,
-} from './seed.js';
 
 export * as schema from './schema.js';
 export { PostgresCaseStore } from './case-store.js';

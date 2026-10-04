@@ -17,7 +17,7 @@ It is not migrated, reused or modified by this workspace.
 
 ```text
 packages/shared/   domain contracts and Zod schemas; imports no database or provider SDK
-packages/db/       every domain SQL query, the Drizzle schema, migrations and the seed
+packages/db/       every domain SQL query, the Drizzle schema and migrations
 tests/integration/ runs against a real PostgreSQL it provisions and drops itself
 ```
 
@@ -33,7 +33,6 @@ pnpm install --frozen-lockfile
 cp .env.example .env            # local defaults already match compose.yaml
 docker compose up -d db         # PostgreSQL 16.13 on 127.0.0.1:5435
 pnpm db:migrate                 # applies reviewed SQL from packages/db/drizzle/
-pnpm db:seed                    # synthetic fixtures; safe to re-run
 ```
 
 `db` is the only service in `compose.yaml`; it binds **5435** to avoid colliding with other
@@ -61,26 +60,17 @@ code and commit it; `drizzle-kit push` is deliberately not wired up.
 Every variable is documented in `.env.example`. This milestone reads four:
 `DATABASE_URL` (the application identity), `MIGRATION_DATABASE_URL` (a separate
 schema-migration identity, higher-privilege in a deployed environment),
-`TEST_ADMIN_DATABASE_URL` (integration tests only), and the optional `SEED_HEARING_AT`.
+and `TEST_ADMIN_DATABASE_URL` (integration tests only).
 
 Provider credentials are absent on purpose: nothing here can reach an external service.
 
-## Resetting the demo database
+## Resetting the local database
 
 ```bash
-docker compose down -v && docker compose up -d db && pnpm db:migrate && pnpm db:seed
+docker compose down -v && docker compose up -d db && pnpm db:migrate
 ```
 
-`down -v` destroys the volume, so this discards everything in the local database. The seed
-is idempotent, so re-running it on a database you have worked in adds nothing and removes
-nothing.
-
-## Fixtures are synthetic
-
-Sarah Miller, John Smith and their case are invented, and every document is a few lines of
-made-up text. Seeded phone numbers use ITU country code **+999**, which is reserved and
-reaches no subscriber anywhere — a seeded number cannot message a real person even if a
-future send path forgets to check its allowlist.
+`down -v` destroys the volume, so this discards everything in the local database.
 
 This is a synthetic single-firm demo. Before any real client data, the design requires
 end-user authentication and authorization, participant consent and onboarding, retention
