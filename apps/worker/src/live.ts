@@ -1,4 +1,13 @@
-import { DEFAULT_MODELS, analyzeCase, converse, extractDocument, gatherLegalContext, mistralClient, transcribeVoice } from '@lexora/ai';
+import {
+  DEFAULT_MODELS,
+  analyzeCase,
+  converse,
+  embedTexts,
+  extractDocument,
+  gatherLegalContext,
+  mistralClient,
+  transcribeVoice,
+} from '@lexora/ai';
 import type { WorkerConfig } from './config.js';
 import type { AiPort, LegalPort } from './ports.js';
 
@@ -12,11 +21,14 @@ export function liveAi(config: WorkerConfig): AiPort {
   return {
     analyze: (input) => analyzeCase(client, input, models.analysis),
     converse: async (input) => ({ text: await converse(client, input, models.analysis) }),
-    transcribe: async (input) => ({ text: (await transcribeVoice(client, input, models.transcription)).text }),
+    transcribe: async (input) => ({
+      text: (await transcribeVoice(client, input, models.transcription)).text,
+    }),
     extract: async (input) => {
       const r = await extractDocument(client, input, models);
       return { text: r.text, documentType: r.metadata.documentType, summary: r.metadata.summary };
     },
+    embed: (texts) => embedTexts(client, texts, DEFAULT_MODELS.embedding),
   };
 }
 

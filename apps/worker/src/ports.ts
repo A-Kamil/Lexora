@@ -1,4 +1,10 @@
-import type { AnalysisInput, AnalysisResult, ConverseInput, LegalAuditEntry, LegalSource } from '@lexora/ai';
+import type {
+  AnalysisInput,
+  AnalysisResult,
+  ConverseInput,
+  LegalAuditEntry,
+  LegalSource,
+} from '@lexora/ai';
 
 /** Thin envelopes around @lexora/ai and the WhatsApp provider, so processInbound runs identically on fakes and live services. */
 export interface AiPort {
@@ -6,16 +12,27 @@ export interface AiPort {
   /** Intake agent: the next WhatsApp message to the client (one question, no legal advice). */
   converse(input: ConverseInput): Promise<{ text: string }>;
   transcribe(input: { bytes: Uint8Array; fileName: string }): Promise<{ text: string }>;
-  extract(input: { bytes: Uint8Array; mimeType: string; fileName?: string }): Promise<{ text: string; documentType: string; summary?: string }>;
+  extract(input: {
+    bytes: Uint8Array;
+    mimeType: string;
+    fileName?: string;
+  }): Promise<{ text: string; documentType: string; summary?: string }>;
+  embed?(texts: string[]): Promise<number[][]>;
 }
 
 export interface Messenger {
   /** 'simulated' means nothing left the machine. */
-  send(toE164: string, body: string): Promise<{ status: 'sent' | 'simulated'; providerMessageId?: string }>;
+  send(
+    toE164: string,
+    body: string,
+  ): Promise<{ status: 'sent' | 'simulated'; providerMessageId?: string }>;
 }
 
 export interface LegalPort {
-  gather(question: string, opts: { clientIdentifiers: string[] }): Promise<{ sources: LegalSource[]; audit: LegalAuditEntry[] }>;
+  gather(
+    question: string,
+    opts: { clientIdentifiers: string[] },
+  ): Promise<{ sources: LegalSource[]; audit: LegalAuditEntry[] }>;
 }
 
 /** Downloads an inbound media file (media reference from the inbound message). */
