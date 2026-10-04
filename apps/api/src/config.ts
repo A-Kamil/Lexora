@@ -15,6 +15,9 @@ const envSchema = z.object({
     .transform((s) => s.split(',').map((n) => n.trim()).filter((n) => n.length > 0))
     .pipe(z.array(z.string().regex(E164, 'DEMO_ALLOWED_NUMBERS must contain E.164 numbers'))),
   STORE_MODE: z.enum(['memory', 'db']).default('memory'),
+  // Real demo phones replacing the fictional seeded people (memory mode only).
+  DEMO_CLIENT_PHONE: z.string().regex(E164, 'DEMO_CLIENT_PHONE must be E.164').optional(),
+  DEMO_LAWYER_PHONE: z.string().regex(E164, 'DEMO_LAWYER_PHONE must be E.164').optional(),
 });
 
 export interface ApiConfig {
@@ -25,6 +28,8 @@ export interface ApiConfig {
   twilioAccountSid: string | undefined;
   allowedNumbers: ReadonlySet<string>;
   storeMode: 'memory' | 'db';
+  demoClientPhone: string | undefined;
+  demoLawyerPhone: string | undefined;
 }
 
 export function parseConfig(env: NodeJS.ProcessEnv): ApiConfig {
@@ -37,5 +42,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): ApiConfig {
     twilioAccountSid: v.TWILIO_ACCOUNT_SID,
     allowedNumbers: new Set(v.DEMO_ALLOWED_NUMBERS),
     storeMode: v.STORE_MODE,
+    demoClientPhone: v.DEMO_CLIENT_PHONE,
+    demoLawyerPhone: v.DEMO_LAWYER_PHONE,
   };
 }

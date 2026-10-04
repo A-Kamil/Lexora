@@ -13,6 +13,7 @@ It never calls the AI or downloads media before replying.
 | `DEMO_ALLOWED_NUMBERS` | no | empty | Comma-separated E.164 numbers. **Empty = every sender is ignored.** |
 | `PORT` | no | `3000` | |
 | `APP_MODE` | no | `demo` | `test` only turns off Fastify logs (tests). |
+| `DEMO_CLIENT_PHONE`, `DEMO_LAWYER_PHONE` | no | — | Memory mode: real phones replacing the fictional client/lawyer. Both or neither, different, and both in `DEMO_ALLOWED_NUMBERS`, otherwise the API refuses to start. |
 | `STORE_MODE` | no | `memory` | `db` is refused until packages/db lands. |
 
 ## Run (memory mode)
@@ -28,7 +29,7 @@ In the Twilio console → Messaging → Try it out → WhatsApp sandbox settings
 `PUBLIC_BASE_URL` must be exactly the URL in front of `/webhooks/twilio`, otherwise every request gets 403.
 
 The seeded memory store has a fictional client `+33600000001` and a fictional lawyer `+33600000002`.
-For a real phone to be accepted, it must be in `DEMO_ALLOWED_NUMBERS` **and** known to the store.
+For real phones, set `DEMO_CLIENT_PHONE` and `DEMO_LAWYER_PHONE` (also listed in `DEMO_ALLOWED_NUMBERS`).
 
 **Provisional:** in memory mode the queue cannot reach the worker process, so the API loads
 `processInbound(deps, messageId)` from `@lexora/worker` and runs it in-process after replying
