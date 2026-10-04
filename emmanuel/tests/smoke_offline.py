@@ -13,7 +13,7 @@ legifrance.search = lambda q, code="travail", n=5: [{"id": "LEGIARTI000000000001
 legifrance.get_article = lambda code, num: {"id": "LEGIARTI000000000002", "num": num, "code": code, "etat": "VIGUEUR", "texte": "texte officiel", "url": "u"}
 entreprises.search = lambda n, k=3: [{"siren": "000000000", "nom": "BOULANGERIE FICTIVE", "adresse": "Paris"}]
 judilibre.search = lambda q, n=5: []
-ai.build_case_file = lambda h, d, s=None: {"client": "Jean Fictif", "employeur": "Boulangerie Fictive SARL", "faits": {"type_rupture": "licenciement", "date_notification": "12/09/2026", "mise_a_pied_conservatoire": True},
+ai.build_case_file = lambda h, d, s=None: {"client": "Jean Fictif", "employeur": "Boulangerie Fictive SARL", "faits": {"type_rupture": "licenciement", "date_notification": "12/09/2026"}, "urgence": {"niveau": "immediat", "action": "Appeler le client aujourd'hui", "raison": "mise à pied conservatoire en cours"},
     "textes_applicables": [{"reference": s[0]["title"], "apport": "cause réelle et sérieuse"}] if s else [], "resume_client": "Transmis. Ceci n'est pas un conseil juridique, votre avocat vous recontactera."}
 
 # fake Mistral: scripted tool calls
@@ -68,6 +68,6 @@ print("smoke2 OK")
 os.environ["LEXORA_TODAY"] = "04/10/2026"
 with TestClient(app) as c:
     r = c.get(f"/avocat/{cid}/recap.md")
-    assert r.status_code == 200 and "Urgence : immediat" in r.text and "R2" in r.text and "Toutes les sources" in r.text, r.text[:400]
+    assert r.status_code == 200 and "Urgence : immediat" in r.text and "mise à pied" in r.text and "Toutes les sources" in r.text, r.text[:400]
     assert [x for x in c.get("/api/cases").json() if x["id"] == cid][0]["urgence"] == "immediat"
 print("recap OK")

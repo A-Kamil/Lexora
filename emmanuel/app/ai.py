@@ -2,12 +2,15 @@
 import base64
 import json
 import os
+from pathlib import Path
 
 from mistralai import Mistral
 
 CHAT_MODEL = os.environ.get("LEXORA_CHAT_MODEL", "mistral-medium-latest")
 VOICE_MODEL = os.environ.get("LEXORA_VOICE_MODEL", "voxtral-mini-latest")
 OCR_MODEL = os.environ.get("LEXORA_OCR_MODEL", "mistral-ocr-latest")
+
+URGENCY_CRITERIA = Path(os.environ.get("LEXORA_URGENCE_CRITERES", Path(__file__).parent / "data" / "criteres_urgence.md"))
 
 _client = None
 
@@ -105,20 +108,22 @@ def build_case_file(history: list[dict], docs: list[dict], sources: list[dict] |
     pieces = "\n".join(f"- {d['category']}: {d['summary']}" for d in docs) or "aucune"
     textes = "\n".join(f"- {s['title']}: {(s.get('extrait') or '')[:200]}" for s in (sources or [])) or "aucun"
     prompt = (
-        "Prépare la fiche d'un dossier pour l'avocat (droit du travail). Tu EXTRAIS des faits, tu ne décides pas "
-        "de l'urgence (elle est calculée ensuite par des règles). JSON strict :\n"
+        "Prépare la fiche d'un dossier pour l'avocat (droit du travail). JSON strict :\n"
         "{\"client\": ..., \"employeur\": ..., \"domaine\": ..., \"resume_faits\": \"5 phrases max\", "
         "\"chronologie\": [{\"date\": \"JJ/MM/AAAA\", \"evenement\": ...}], "
         "\"faits\": {\"type_rupture\": \"licenciement|rupture_conventionnelle|demission|autre|null\", "
         "\"date_notification\": \"JJ/MM/AAAA ou null\", \"date_entretien_prealable\": \"JJ/MM/AAAA ou null\", "
         "\"mise_a_pied_conservatoire\": true|false|null, \"salarie_protege\": true|false|null, "
         "\"signaux\": [parmi: harcelement, discrimination, accident_du_travail, maladie, grossesse, lanceur_d_alerte, surveillance_messages]}, "
+        "\"urgence\": {\"niveau\": \"immediat|48h|normal\", \"action\": \"Appeler le client aujourd'hui | Rappeler le client sous 48 h | Réponse écrite\", "
+        "\"raison\": \"1 à 2 phrases, appuyées sur les faits du dossier\"} selon les CRITÈRES D'URGENCE, "
         "\"pieces\": [{\"categorie\": ..., \"resume\": ...}], "
         "\"questions_pour_l_avocat\": [...], \"pieces_manquantes\": [...], "
         "\"textes_applicables\": [{\"reference\": ..., \"apport\": ...}] (UNIQUEMENT parmi les TEXTES TROUVÉS), "
         "\"resume_client\": \"message court au client : ce qui a été transmis, prochaines étapes, "
         "et la phrase 'Ceci n'est pas un conseil juridique, votre avocat vous recontactera.'\"}\n"
-        "Un fait non dit par le client ou absent des pièces vaut null : n'invente rien."
+        "Un fait non dit par le client ou absent des pièces vaut null : n'invente rien.\n\n"
+        "CRITÈRES D'URGENCE (définis par le cabinet) :\n" + URGENCY_CRITERIA.read_text(encoding="utf-8")
     )
     res = client().chat.complete(
         model=CHAT_MODEL,
