@@ -2,7 +2,8 @@
 
 ## Fait
 - Étape 1 — `config.ts` (Zod), `app.ts` (`buildApp`), `GET /health/live`, test `health-live`. (926e2ca)
-- Étape 2 — `POST /webhooks/twilio` : signature Twilio vérifiée en premier (`twilio.validateRequest`, URL = `PUBLIC_BASE_URL + /webhooks/twilio`), puis champs requis (400). Tests : signature invalide/absente → 403, valide → 200 `<Response/>`, malformé → 400.
+- Étape 2 — `POST /webhooks/twilio` : signature Twilio vérifiée en premier (`twilio.validateRequest`, URL = `PUBLIC_BASE_URL + /webhooks/twilio`), puis champs requis (400). Tests : signature invalide/absente → 403, valide → 200 `<Response/>`, malformé → 400. (4f5a935)
+- Étape 3 — liste blanche `DEMO_ALLOWED_NUMBERS` (vide = tout refuser), `resolveParticipant` (absent/ambigu ignorés), avocat ignoré ; journaux avec numéro masqué `+336******01`, jamais le texte. Tests : hors liste, liste vide, absent, ambigu, avocat → 200 et rien stocké.
 
 ## Non fait
 - (en cours)
