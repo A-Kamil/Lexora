@@ -231,7 +231,15 @@ function defaultMediaOf(message: StoredMessage): InboundMedia[] {
 
 function toContextMessage(m: StoredMessage, ctx: CaseContext): ContextMessage {
   const role = m.direction === 'outbound' ? 'assistant' : m.personId && m.personId === ctx.lawyer?.id ? 'lawyer' : 'client';
-  return { id: m.id, role, text: m.text, at: m.createdAt };
+  // A photo or PDF arrives as a message with no text: without this note the models think nothing was sent.
+  const notes = m.direction === 'inbound'
+    ? ctx.documents.filter((d) => d.messageId === m.id).map((d) =>
+        d.status === 'ready'
+          ? `[Pièce jointe reçue : ${d.documentType ?? 'document'}${d.summary ? ` — ${d.summary}` : ''}]`
+          : '[Pièce jointe reçue mais illisible : demander de la renvoyer plus nette]')
+    : [];
+  const text = [m.text, ...notes].filter((t) => t.trim()).join('\n');
+  return { id: m.id, role, text, at: m.createdAt };
 }
 
 async function processMedia(deps: WorkerDeps, log: Logger, message: StoredMessage, media: InboundMedia[], ctx: CaseContext) {

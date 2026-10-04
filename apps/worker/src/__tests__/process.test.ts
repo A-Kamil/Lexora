@@ -123,3 +123,18 @@ test('lawyer alert is capped at 1 200 characters', () => {
   assert.ok(t.length <= 1200);
   assert.ok(t.endsWith('rappeler le client maintenant.'));
 });
+
+test('photo without text: the agent is told a document arrived (ready or unreadable)', async () => {
+  const { store, deps } = setup();
+  const id = await inbound(store, '');
+  store.documents.push({ id: 'd-1', caseId: 'c-1', messageId: id, mimeType: 'image/jpeg', status: 'failed', extractedText: null, documentType: null });
+  await processInbound(deps, id);
+  const history = (deps.ai as unknown as { calls: { converse: { history: { text: string }[] }[] } }).calls.converse[0]!.history;
+  assert.match(history.at(-1)!.text, /Pièce jointe reçue mais illisible/);
+});
+
+test('cleanReply strips stage directions and Markdown bold', async () => {
+  const { cleanReply } = await import('@lexora/ai');
+  const raw = '(Pas de réponse reçue – relance concise)\n\nJe n\'ai pas reçu **la photo**.\n\n(Le dossier est presque complet)';
+  assert.equal(cleanReply(raw), 'Je n\'ai pas reçu *la photo*.');
+});
