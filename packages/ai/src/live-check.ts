@@ -41,3 +41,12 @@ const turn2 = await converse(client, {
   documents: [],
 }, DEFAULT_MODELS.analysis);
 console.log('agent 2 (must not advise):', turn2);
+
+// Vision: describe a generated test image (a fictional plate drawn as text) when VISION_CHECK_IMAGE points to a file.
+if (process.env.VISION_CHECK_IMAGE) {
+  const { readFileSync } = await import('node:fs');
+  const { describeImage } = await import('./index.js');
+  const bytes = readFileSync(process.env.VISION_CHECK_IMAGE);
+  const mime = process.env.VISION_CHECK_IMAGE.endsWith('.png') ? 'image/png' : 'image/jpeg';
+  console.log('vision:', await describeImage(client, { bytes, mimeType: mime }, DEFAULT_MODELS.vision));
+}

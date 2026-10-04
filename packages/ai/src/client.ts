@@ -10,6 +10,8 @@ export const DEFAULT_MODELS = {
   analysis: 'mistral-large-latest',
   ocr: 'mistral-ocr-latest',
   transcription: 'voxtral-mini-latest',
+  // Mistral Medium 3+ accepts images; override with MISTRAL_VISION_MODEL (e.g. pixtral-large-latest).
+  vision: 'mistral-medium-latest',
 } as const;
 
 /** First text block of a chat completion, whatever the SDK's content shape. */

@@ -59,15 +59,24 @@ export function defaultUrgencyCriteria(): string {
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 
 /** Deterministic lawyer alert, no AI in the wording, at most 1 200 characters. */
-export function formatLawyerAlert(p: { urgency: 'HIGH' | 'CRITICAL'; clientName: string; caseTitle: string; issue: string; urgencyReason: string }): string {
-  const text = [
+export function formatLawyerAlert(p: {
+  urgency: 'HIGH' | 'CRITICAL'; clientName: string; caseTitle: string; issue: string; urgencyReason: string;
+  /** Number the lawyer must call back: the person who wrote. */
+  callback?: string;
+  documents?: string[];
+  missing?: string[];
+}): string {
+  const lines = [
     `LEXORA — ${p.urgency}`,
     `${clip(p.clientName, 120)} — ${clip(p.caseTitle, 160)}`,
-    clip(p.issue, 400),
-    `Pourquoi : ${clip(p.urgencyReason, 400)}`,
-    'À faire : rappeler le client maintenant.',
-  ].join('\n');
-  return clip(text, ALERT_MAX);
+    clip(p.issue, 300),
+    `Pourquoi : ${clip(p.urgencyReason, 300)}`,
+  ];
+  if (p.documents?.length) lines.push(`Pièces reçues : ${clip(p.documents.join(', '), 150)}`);
+  if (p.missing?.length) lines.push(`À vérifier : ${clip(p.missing.slice(0, 3).join(' ; '), 200)}`);
+  if (p.callback) lines.push(`Rappeler : ${p.callback}`);
+  lines.push('À faire : rappeler le client maintenant. Dossier complet sur le tableau de bord.');
+  return clip(lines.join('\n'), ALERT_MAX);
 }
 
 function errName(e: unknown) {
@@ -187,7 +196,12 @@ export async function processInbound(deps: WorkerDeps, messageId: string): Promi
       log.warn('no_lawyer', { messageId, caseId: message.caseId, note: 'aucun avocat assigné' });
       alert = 'no_lawyer';
     } else {
-      const text = formatLawyerAlert({ urgency: analysis.urgency, clientName: ctx.client.displayName, caseTitle: ctx.case.title, issue: analysis.issue, urgencyReason: analysis.urgencyReason });
+      const text = formatLawyerAlert({
+        urgency: analysis.urgency, clientName: ctx.client.displayName, caseTitle: ctx.case.title, issue: analysis.issue, urgencyReason: analysis.urgencyReason,
+        callback: ctx.client.phoneE164,
+        documents: ctx.documents.map((d) => (d.status === 'ready' ? d.documentType ?? 'document' : 'pièce illisible')),
+        missing: analysis.missingInformation,
+      });
       alert = await deliver(deps, log, { caseId: message.caseId, personId: ctx.lawyer.id, phone: ctx.lawyer.phoneE164, text, purpose: 'lawyer_alert', analysisId: saved.analysisId });
     }
   }

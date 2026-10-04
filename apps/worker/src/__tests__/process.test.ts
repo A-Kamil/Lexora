@@ -18,7 +18,7 @@ test('garde à vue → 1 CRITICAL analysis, 1 lawyer alert, agent reply + "lawye
   assert.equal(alerts[0]!.status, 'simulated');
   assert.equal(alerts[0]!.personId, 'p-lawyer');
   assert.match(alerts[0]!.text, /^LEXORA — CRITICAL\nSarah Miller \(fictional\) — Fictional criminal case\n/);
-  assert.match(alerts[0]!.text, /À faire : rappeler le client maintenant\.$/);
+  assert.match(alerts[0]!.text, /Rappeler : \+33600000001\nÀ faire : rappeler le client maintenant\./);
 
   const replies = store.outbound.filter((o) => o.purpose === 'client_reply');
   assert.deepEqual(replies.map((o) => o.text), [FAKE_INTAKE_FIRST, CLIENT_NOTICE_ALERTED]);
@@ -121,7 +121,7 @@ test('AI failure → conservative HIGH fallback still alerts the lawyer', async 
 test('lawyer alert is capped at 1 200 characters', () => {
   const t = formatLawyerAlert({ urgency: 'HIGH', clientName: 'A'.repeat(500), caseTitle: 'B'.repeat(500), issue: 'C'.repeat(5000), urgencyReason: 'D'.repeat(5000) });
   assert.ok(t.length <= 1200);
-  assert.ok(t.endsWith('rappeler le client maintenant.'));
+  assert.ok(t.endsWith('Dossier complet sur le tableau de bord.'));
 });
 
 test('photo without text: the agent is told a document arrived (ready or unreadable)', async () => {
