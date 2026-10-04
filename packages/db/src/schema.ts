@@ -3,6 +3,7 @@ import {
   bigint,
   boolean,
   check,
+  customType,
   foreignKey,
   index,
   integer,
@@ -15,6 +16,7 @@ import {
   unique,
   uniqueIndex,
   uuid,
+  vector,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import {
@@ -89,6 +91,11 @@ export const escalationStatus = pgEnum('escalation_status', ESCALATION_STATUSES)
 
 const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
 const updatedAt = () => timestamp('updated_at', { withTimezone: true }).notNull().defaultNow();
+const bytea = customType<{ data: Uint8Array; driverData: Buffer }>({
+  dataType: () => 'bytea',
+  toDriver: (value) => Buffer.from(value),
+  fromDriver: (value) => new Uint8Array(value),
+});
 
 // ---------------------------------------------------------------------------
 // people
@@ -387,6 +394,11 @@ export const documents = pgTable(
     sha256: text('sha256'),
     status: documentStatus('status').notNull().default('pending'),
     extractedText: text('extracted_text'),
+    /** Hackathon storage: original private bytes live in PostgreSQL (10 MB enforced by the worker). */
+    originalBytes: bytea('original_bytes'),
+    originalFilename: text('original_filename'),
+    indexedAt: timestamp('indexed_at', { withTimezone: true }),
+    embeddingError: text('embedding_error'),
     /** Validated extraction metadata: document type, summary, unverified date mentions. */
     metadata: jsonb('metadata').$type<DocumentMetadata>().notNull().default({}),
     errorCode: text('error_code'),
@@ -441,6 +453,35 @@ export const documents = pgTable(
     index('documents_case_id_status_idx').on(t.caseId, t.status),
     // Composite-FK target for a deadline's source document.
     unique('documents_id_case_id_key').on(t.id, t.caseId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// document_chunks
+// ---------------------------------------------------------------------------
+
+export const documentChunks = pgTable(
+  'document_chunks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    documentId: uuid('document_id').notNull(),
+    chunkIndex: integer('chunk_index').notNull(),
+    content: text('content').notNull(),
+    embedding: vector('embedding', { dimensions: 1024 }).notNull(),
+    embeddingModel: text('embedding_model').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    foreignKey({
+      name: 'document_chunks_document_id_fkey',
+      columns: [t.documentId],
+      foreignColumns: [documents.id],
+    }).onDelete('cascade'),
+    unique('document_chunks_document_id_chunk_index_key').on(t.documentId, t.chunkIndex),
+    check('document_chunks_chunk_index_non_negative', sql`${t.chunkIndex} >= 0`),
+    check('document_chunks_content_not_blank', sql`length(btrim(${t.content})) > 0`),
+    check('document_chunks_embedding_model_not_blank', sql`length(btrim(${t.embeddingModel})) > 0`),
+    index('document_chunks_document_id_idx').on(t.documentId),
   ],
 );
 

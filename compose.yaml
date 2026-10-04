@@ -10,7 +10,7 @@ services:
     # Pinned major+minor. Match this major to the hosted PostgreSQL major chosen
     # for the demo project before running integration against it (design: delivery
     # boundaries). 16 is the local default until that project is selected.
-    image: postgres:16.13-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: lexora
       POSTGRES_PASSWORD: lexora_local_dev
