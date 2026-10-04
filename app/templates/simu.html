@@ -1,7 +1,0 @@
-{% extends "base.html" %}{% block title %}Simulateur — Lexora{% endblock %}{% block body %}
-<div class="card"><h1>Simulateur WhatsApp <span class="meta">(secours hors Twilio)</span></h1>
-{% for m in messages %}<div class="msg {{ 'out' if m.direction == 'out' else 'in' }}">{% if m.kind != "text" %}<span class="meta">[{{ m.kind }}]</span> {% endif %}{{ m.text }}</div>{% endfor %}
-<form method="post" action="/simu" enctype="multipart/form-data" style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-<input type="text" name="text" placeholder="Message du client (ou « fin »)" autofocus>
-<input type="file" name="file" accept="audio/*,application/pdf,image/*"><input type="submit" value="Envoyer"></form>
-<form method="post" action="/simu/reset" style="margin-top:8px"><button>Nouvelle conversation</button></form></div>{% endblock %}
