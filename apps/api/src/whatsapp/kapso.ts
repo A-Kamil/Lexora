@@ -95,16 +95,19 @@ export function parseKapsoMessage(
   if (type === 'image') {
     const image = asRecord(message.image);
     const mediaId = asString(image?.id);
+    const text = asString(image?.caption);
+    const mimeType =
+      asString(image?.mime_type) ?? asString(kapsoMedia?.content_type);
+    const filename = asString(kapsoMedia?.filename);
     if (!mediaId) return null;
 
     return {
       ...base,
       kind: 'image',
-      text: asString(image?.caption),
       mediaId,
-      mimeType:
-        asString(image?.mime_type) ?? asString(kapsoMedia?.content_type),
-      filename: asString(kapsoMedia?.filename),
+      ...(text ? { text } : {}),
+      ...(mimeType ? { mimeType } : {}),
+      ...(filename ? { filename } : {}),
     };
   }
 
@@ -113,6 +116,9 @@ export function parseKapsoMessage(
     const mediaId = asString(document?.id);
     const mimeType =
       asString(document?.mime_type) ?? asString(kapsoMedia?.content_type);
+    const text = asString(document?.caption);
+    const filename =
+      asString(document?.filename) ?? asString(kapsoMedia?.filename);
 
     if (!mediaId) return null;
     if (mimeType !== 'application/pdf') return { ...base, kind: 'unsupported' };
@@ -120,11 +126,10 @@ export function parseKapsoMessage(
     return {
       ...base,
       kind: 'pdf',
-      text: asString(document?.caption),
       mediaId,
       mimeType,
-      filename:
-        asString(document?.filename) ?? asString(kapsoMedia?.filename),
+      ...(text ? { text } : {}),
+      ...(filename ? { filename } : {}),
     };
   }
 
