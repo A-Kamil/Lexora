@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import formbody from '@fastify/formbody';
 import twilio from 'twilio';
 import { z } from 'zod';
+import type { InboundMedia } from '@lexora/shared';
 import type { AppDeps } from './app.js';
 
 export const WEBHOOK_PATH = '/webhooks/twilio';
@@ -22,11 +23,24 @@ export function maskPhone(e164: string): string {
   return e164.slice(0, 4) + '*'.repeat(e164.length - 6) + e164.slice(-2);
 }
 
+const mediaSchema = z.object({ url: z.url({ protocol: /^https$/ }), contentType: z.string().min(1).max(255) });
+
+/** MediaUrl{i}/MediaContentType{i} for i < NumMedia; null if any is missing or invalid. */
+function readMedia(params: Record<string, unknown>, count: number): InboundMedia[] | null {
+  const media: InboundMedia[] = [];
+  for (let index = 0; index < count; index++) {
+    const m = mediaSchema.safeParse({ url: params[`MediaUrl${index}`], contentType: params[`MediaContentType${index}`] });
+    if (!m.success) return null;
+    media.push({ index, ...m.data });
+  }
+  return media;
+}
+
 function twiml(reply: FastifyReply) {
   return reply.code(200).type('application/xml').send(EMPTY_TWIML);
 }
 
-export async function webhookRoutes(app: FastifyInstance, { config, store }: AppDeps) {
+export async function webhookRoutes(app: FastifyInstance, { config, store, queue }: AppDeps) {
   await app.register(formbody, { bodyLimit: BODY_LIMIT });
   const signedUrl = config.publicBaseUrl + WEBHOOK_PATH;
 
@@ -43,7 +57,8 @@ export async function webhookRoutes(app: FastifyInstance, { config, store }: App
 
     // 2. Required fields.
     const parsed = fieldsSchema.safeParse(params);
-    if (!parsed.success || (config.twilioAccountSid !== undefined && parsed.data.AccountSid !== config.twilioAccountSid)) {
+    const media = parsed.success ? readMedia(params, parsed.data.NumMedia) : null;
+    if (!parsed.success || media === null || (config.twilioAccountSid !== undefined && parsed.data.AccountSid !== config.twilioAccountSid)) {
       request.log.warn({ reason: 'malformed' }, 'twilio webhook rejected');
       return reply.code(400).send({ error: 'malformed request' });
     }
@@ -75,6 +90,29 @@ export async function webhookRoutes(app: FastifyInstance, { config, store }: App
       return twiml(reply);
     }
 
+    // 5. Store, then hand over to the worker. No AI call or download before replying.
+    try {
+      const { message, created } = await store.saveInboundMessage({
+        caseId: resolved.caseId,
+        personId: resolved.person.id,
+        provider: 'twilio',
+        providerMessageId: fields.MessageSid,
+        text: fields.Body,
+        media,
+        receivedAt: new Date().toISOString(),
+      });
+      if (created) {
+        await queue.enqueue('process-inbound', { messageId: message.id });
+        log.info({ messageId: message.id, media: media.length }, 'inbound stored and queued');
+      } else {
+        log.info({ messageId: message.id, reason: 'duplicate' }, 'inbound already stored');
+      }
+    } catch (err) {
+      log.error({ err }, 'store or queue unavailable');
+      return reply.code(503).send({ error: 'store unavailable' });
+    }
+
+    // 6. Empty TwiML: the reply to the sender (if any) is sent by the worker.
     return twiml(reply);
   });
 }
