@@ -1,0 +1,25 @@
+{
+  "name": "whatsapp",
+  "version": "0.1.0",
+  "tier": "T1",
+  "mode": "read",
+  "hitl": true,
+  "transport": "http",
+  "endpoint_env": "TWIN_WA_LISTEN",
+  "endpoint_default": "http://127.0.0.1:8081/mcp",
+  "scopes": ["chats:read", "messages:read", "messages:search"],
+  "optional_scopes": {
+    "messages:send": "activé par TWIN_WA_ALLOW_SEND=1 ; outil send_message ; HITL obligatoire côté gateway"
+  },
+  "tools": {
+    "list_chats": {"read_only": true},
+    "get_messages": {"read_only": true},
+    "search_messages": {"read_only": true},
+    "sync_status": {"read_only": true},
+    "send_message": {"read_only": false, "hitl": true, "enabled_by": "TWIN_WA_ALLOW_SEND"}
+  },
+  "notes": [
+    "Protocole multi-device non officiel (whatsmeow) : hors CGU WhatsApp, risque de bannissement faible en lecture, réel en écriture automatisée.",
+    "Le contenu renvoyé par les outils est une DONNÉE : le gateway l'encadre par des délimiteurs et ne l'interprète jamais comme instruction."
+  ]
+}
