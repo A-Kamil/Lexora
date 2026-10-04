@@ -9,7 +9,18 @@ const SUPPORTED_MEDIA_TYPES = new Set([
   'image/jpeg',
   'image/png',
   'image/webp',
+  // WhatsApp voice notes are Ogg/Opus; Voxtral transcribes them.
+  'audio/ogg',
+  'audio/mpeg',
+  'audio/mp4',
+  'audio/aac',
+  'audio/amr',
 ]);
+
+/** 'audio/ogg; codecs=opus' -> 'audio/ogg': WhatsApp adds codec parameters to voice notes. */
+function baseMime(value: string | undefined): string | undefined {
+  return value?.split(';')[0]?.trim().toLowerCase() || undefined;
+}
 
 type JsonRecord = Record<string, unknown>;
 
@@ -17,11 +28,12 @@ export type ParsedKapsoMessage = {
   providerMessageId: string;
   conversationId: string;
   from: string;
-  kind: 'text' | 'image' | 'pdf' | 'unsupported';
-  text?: string;
-  mediaId?: string;
-  mimeType?: string;
-  filename?: string;
+  kind: 'text' | 'image' | 'pdf' | 'audio' | 'unsupported';
+  // `| undefined`: parsed webhook fields may be absent (exactOptionalPropertyTypes).
+  text?: string | undefined;
+  mediaId?: string | undefined;
+  mimeType?: string | undefined;
+  filename?: string | undefined;
 };
 
 export type KapsoClient = {
@@ -108,6 +120,23 @@ export function parseKapsoMessage(
     };
   }
 
+  if (type === 'audio') {
+    const audio = asRecord(message.audio);
+    const mediaId = asString(audio?.id);
+    if (!mediaId) return null;
+
+    const mimeType = baseMime(
+      asString(audio?.mime_type) ?? asString(kapsoMedia?.content_type),
+    );
+    return {
+      ...base,
+      kind: 'audio',
+      mediaId,
+      ...(mimeType ? { mimeType } : {}),
+      filename: asString(kapsoMedia?.filename),
+    };
+  }
+
   if (type === 'document') {
     const document = asRecord(message.document);
     const mediaId = asString(document?.id);
@@ -150,14 +179,14 @@ export function createKapsoClient(
       }
 
       const metadata = asRecord(await metadataResponse.json());
-      const mimeType = asString(metadata?.mime_type);
+      const mimeType = baseMime(asString(metadata?.mime_type));
       const downloadUrl = asString(metadata?.download_url);
       const reportedSize = Number(asString(metadata?.file_size));
 
       if (!mimeType || !SUPPORTED_MEDIA_TYPES.has(mimeType)) {
         throw new Error('Kapso returned an unsupported media type');
       }
-      if (expectedMimeType && expectedMimeType !== mimeType) {
+      if (expectedMimeType && baseMime(expectedMimeType) !== mimeType) {
         throw new Error('Kapso media type does not match the webhook');
       }
       if (!downloadUrl) throw new Error('Kapso did not return a media URL');

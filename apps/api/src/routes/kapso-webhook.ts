@@ -10,6 +10,7 @@ import type {
   IncomingMessageHandler,
   IncomingWhatsAppMessage,
 } from '../whatsapp/types.js';
+import { maskPhone } from '../whatsapp/phone.js';
 
 type KapsoWebhookOptions = {
   kapsoClient: KapsoClient;
@@ -46,7 +47,7 @@ export async function registerKapsoWebhook(
     try {
       await options.kapsoClient.sendText(to, body);
     } catch (error) {
-      app.log.error({ error, to }, 'Failed to send WhatsApp reply');
+      app.log.error({ error, to: maskPhone(to) }, 'Failed to send WhatsApp reply');
     }
   }
 
@@ -54,7 +55,7 @@ export async function registerKapsoWebhook(
     if (message.kind === 'unsupported') {
       await safeSend(
         message.from,
-        'Please send text, an image, or a PDF document.',
+        'Merci d\'envoyer un texte, un message vocal, une photo ou un PDF.',
       );
       return;
     }
@@ -67,9 +68,9 @@ export async function registerKapsoWebhook(
       ...(message.text ? { text: message.text } : {}),
     };
 
-    if (message.kind === 'image' || message.kind === 'pdf') {
+    if (message.kind === 'image' || message.kind === 'pdf' || message.kind === 'audio') {
       if (!message.mediaId) {
-        await safeSend(message.from, "We couldn't read that file. Please try again.");
+        await safeSend(message.from, "Nous n'avons pas pu lire ce fichier. Pouvez-vous le renvoyer ?");
         return;
       }
 
@@ -85,7 +86,7 @@ export async function registerKapsoWebhook(
           { error, providerMessageId: message.providerMessageId },
           'Failed to download WhatsApp media',
         );
-        await safeSend(message.from, "We couldn't read that file. Please try again.");
+        await safeSend(message.from, "Nous n'avons pas pu lire ce fichier. Pouvez-vous le renvoyer ?");
         return;
       }
     }
@@ -98,7 +99,7 @@ export async function registerKapsoWebhook(
         { error, providerMessageId: message.providerMessageId },
         'Backend message handler failed',
       );
-      await safeSend(message.from, 'Something went wrong. Please try again.');
+      await safeSend(message.from, 'Une erreur technique est survenue. Pouvez-vous renvoyer votre message ?');
     }
   }
 

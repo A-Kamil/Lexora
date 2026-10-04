@@ -8,7 +8,7 @@ export type IncomingWhatsAppMessage = {
   providerMessageId: string;
   conversationId: string;
   from: string;
-  kind: 'text' | 'image' | 'pdf' | 'unsupported';
+  kind: 'text' | 'image' | 'pdf' | 'audio' | 'unsupported';
   text?: string;
   media?: DownloadedMedia;
 };
