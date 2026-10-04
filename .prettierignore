@@ -1,0 +1,10 @@
+# The Python prototype is out of scope and must stay untouched.
+emmanuel/
+
+# Normative source documents: reformatting them would bury their content in diff noise.
+docs/
+
+# Generated or vendored.
+pnpm-lock.yaml
+packages/db/drizzle/
+dist/

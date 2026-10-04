@@ -9,10 +9,30 @@
   "scripts": {
     "build": "pnpm --filter '@lexora/*' -r build",
     "dev": "pnpm build && pnpm --filter @lexora/api dev",
-    "typecheck": "tsc -b --pretty false"
+    "check": "pnpm run lint && pnpm run format:check && pnpm run typecheck",
+    "typecheck": "tsc -b --pretty false && tsc -p tsconfig.check.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run --config vitest.config.ts",
+    "test:integration": "pnpm run build && vitest run --config vitest.integration.config.ts",
+    "db:generate": "pnpm --filter @lexora/db run db:generate",
+    "db:migrate": "pnpm --filter @lexora/db run db:migrate",
+    "db:seed": "pnpm --filter @lexora/db run db:seed"
   },
   "devDependencies": {
+    "@eslint/js": "9.39.1",
+    "@lexora/db": "workspace:*",
+    "@lexora/shared": "workspace:*",
     "@types/node": "24.19.1",
-    "typescript": "6.0.2"
+    "@types/pg": "8.15.5",
+    "drizzle-orm": "0.44.6",
+    "eslint": "9.39.1",
+    "pg": "8.16.3",
+    "prettier": "3.6.2",
+    "tsx": "4.21.0",
+    "typescript": "6.0.2",
+    "typescript-eslint": "8.71.0",
+    "vitest": "3.2.4"
   }
 }

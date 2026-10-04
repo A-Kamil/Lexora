@@ -1,0 +1,23 @@
+{
+  // Type-checks the code that is not part of the build graph: the integration suite,
+  // the colocated unit tests the packages exclude from their dist output, and the root
+  // tool configs. Without this, the largest files in the repository go unchecked.
+  //
+  // `noEmit`, so it cannot be referenced by the build; it only consumes the packages'
+  // declarations, which `tsc -b` produces first.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false
+  },
+  "include": [
+    "tests/**/*.ts",
+    "packages/*/src/**/*.test.ts",
+    "apps/*/src/**/*.test.ts",
+    "vitest.config.ts",
+    "vitest.integration.config.ts"
+  ]
+}

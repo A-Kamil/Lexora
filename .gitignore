@@ -1,8 +1,18 @@
 node_modules/
 dist/
 *.tsbuildinfo
+.pnpm-store/
+
+# Secrets: the example is tracked explicitly, real env files never are.
 .env
 .env.*
 !.env.example
-.pnpm-store/
+
+# Python prototype (emmanuel/) local artifacts
+.venv/
+__pycache__/
+*.pyc
+
 .superpowers/
+coverage/
+.DS_Store
