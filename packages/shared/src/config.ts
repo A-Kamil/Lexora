@@ -7,6 +7,8 @@ const baseEnvSchema = z.object({
 });
 
 const apiEnvSchema = baseEnvSchema.extend({
+  MISTRAL_API_KEY: z.string().min(1),
+  MISTRAL_MODEL: z.string().min(1).default('mistral-large-latest'),
   KAPSO_API_KEY: z.string().min(1),
   KAPSO_PHONE_NUMBER_ID: z.string().min(1),
   KAPSO_WEBHOOK_SECRET: z.string().min(1),
@@ -17,6 +19,8 @@ export function parseApiEnv(env: NodeJS.ProcessEnv) {
   return {
     databaseUrl: value.DATABASE_URL,
     port: value.PORT,
+    mistralApiKey: value.MISTRAL_API_KEY,
+    mistralModel: value.MISTRAL_MODEL,
     kapsoApiKey: value.KAPSO_API_KEY,
     kapsoPhoneNumberId: value.KAPSO_PHONE_NUMBER_ID,
     kapsoWebhookSecret: value.KAPSO_WEBHOOK_SECRET,
