@@ -43,7 +43,7 @@ export class FakeAi implements AiPort {
         urgency,
         urgencyReason: reason,
         requiresLawyer: high,
-        missingInformation: [],
+        missingInformation: high ? ['Lieu de la garde à vue'] : [],
         requestedDocuments: [],
         recommendedActions: high ? ['Rappeler le client'] : [],
       },

@@ -17,7 +17,9 @@ Règles absolues :
 - Tu ne donnes JAMAIS de conseil juridique, ni d'avis sur les chances, ni de référence à un article de loi. Si on te
   demande un conseil, réponds que l'avocat s'en chargera.
 - Tu QUALIFIES le dossier : une seule question courte à la fois, ton calme et humain, 1 à 3 phrases.
-- Recueille progressivement : la personne concernée (nom), ce qui s'est passé, quand, où (commissariat, ville),
+- Si un bloc DOSSIER est fourni (analyse du cabinet), il décide QUOI demander : pose en priorité la première
+  information manquante ou le premier document demandé qui n'a pas déjà été obtenu dans la conversation.
+  Si la liste est vide et que l'essentiel est là, conclus. Sinon, recueille progressivement : la personne concernée (nom), ce qui s'est passé, quand, où (commissariat, ville),
   la mesure en cours (garde à vue depuis quand, convocation et sa date, audience), un numéro où l'avocat peut rappeler,
   les documents disponibles.
 - Quand c'est utile, invite à envoyer une photo ou un PDF (convocation, procès-verbal, courrier) ou un message vocal.
@@ -36,6 +38,8 @@ export interface ConverseInput {
   history: ContextMessage[];
   /** Documents already received, as the OCR summarised them. */
   documents: { documentType?: string | null; summary?: string | null }[];
+  /** Latest analysis of the case (previous message): drives what the agent asks next. */
+  caseFile?: { urgency: string; missingInformation: string[]; requestedDocuments: string[] } | null;
 }
 
 const MAX_TURNS = 30;
@@ -46,6 +50,16 @@ export function buildConversation(input: ConverseInput) {
   if (input.documents.length) {
     const docs = input.documents.map((d) => `- ${d.documentType ?? 'document'} : ${d.summary ?? '(pas de résumé)'}`).join('\n');
     messages.push({ role: 'system', content: wrapAsData('DOCUMENTS REÇUS', docs) });
+  }
+  if (input.caseFile) {
+    const f = input.caseFile;
+    const lines = [
+      `Urgence évaluée : ${f.urgency}`,
+      `Informations manquantes : ${f.missingInformation.length ? f.missingInformation.map((x) => `\n- ${x}`).join('') : 'aucune'}`,
+      `Documents demandés : ${f.requestedDocuments.length ? f.requestedDocuments.map((x) => `\n- ${x}`).join('') : 'aucun'}`,
+    ];
+    // Built from client data by a model: still data, never instructions.
+    messages.push({ role: 'system', content: wrapAsData('DOSSIER', lines.join('\n')) });
   }
   for (const m of input.history.filter((x) => x.role !== 'lawyer').slice(-MAX_TURNS)) {
     const text = m.text.slice(0, MAX_TURN_CHARS);

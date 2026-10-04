@@ -206,7 +206,13 @@ export async function processInbound(deps: WorkerDeps, messageId: string): Promi
 async function converseAndReply(deps: WorkerDeps, log: Logger, message: StoredMessage, ctx: CaseContext): Promise<DeliveryStatus> {
   let text = CLIENT_REPLY_RECEIVED;
   try {
+    // The agent runs alongside this message's analysis, so it is steered by the previous one (one turn behind).
+    const latest = (deps.store.getLatestAnalysis ? await deps.store.getLatestAnalysis(message.caseId) : null) as
+      | { analysis?: { urgency?: string; missingInformation?: string[]; requestedDocuments?: string[] } }
+      | null;
+    const a = latest?.analysis;
     const r = await deps.ai.converse({
+      caseFile: a?.urgency ? { urgency: a.urgency, missingInformation: a.missingInformation ?? [], requestedDocuments: a.requestedDocuments ?? [] } : null,
       history: ctx.messages.map((m) => toContextMessage(m, ctx)),
       documents: ctx.documents.filter((d) => d.status === 'ready').map((d) => ({ documentType: d.documentType, summary: d.summary ?? null })),
     });

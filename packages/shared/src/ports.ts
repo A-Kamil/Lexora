@@ -67,6 +67,8 @@ export interface CaseStore {
    * message without re-alerting the lawyer each time. Optional: without it, every HIGH/CRITICAL message alerts.
    */
   lastAlertedUrgency?(caseId: string): Promise<Urgency | null>;
+  /** Result of the most recent analysis of the case (the `result` given to saveAnalysis), or null. Optional. */
+  getLatestAnalysis?(caseId: string): Promise<unknown>;
 }
 
 export interface JobQueue {

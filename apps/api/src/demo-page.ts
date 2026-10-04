@@ -19,6 +19,7 @@ const analysisSchema = z.object({
   urgency: z.string().optional(),
   urgencyReason: z.string().optional(),
   missingInformation: z.array(z.string()).optional(),
+  requestedDocuments: z.array(z.string()).optional(),
   recommendedActions: z.array(z.string()).optional(),
 });
 
@@ -82,7 +83,8 @@ export function renderDemoPage({ context, analysis, outbound, now }: DemoView): 
       analysisHtml = `<div class="urgency ${level}">${escapeHtml(urgency)}</div>
 <p class="meta">${analysis.status === 'fallback' ? 'Analyse de secours — vérification humaine requise · ' : ''}${escapeHtml(analysis.model)}</p>
 <h3>Raison</h3><p>${escapeHtml(a.urgencyReason ?? '')}</p>
-<h3>Informations manquantes</h3>${list(a.missingInformation, 'Aucune.')}
+<h3>Informations encore manquantes</h3>${list(a.missingInformation, 'Aucune.')}
+<h3>Documents demandés</h3>${list(a.requestedDocuments, 'Aucun.')}
 <h3>Actions recommandées</h3>${list(a.recommendedActions, 'Aucune.')}`;
     }
 

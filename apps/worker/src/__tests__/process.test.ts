@@ -58,8 +58,10 @@ test('conversation: second CRITICAL message → agent asks the next question, la
   assert.equal(store.outbound.filter((o) => o.purpose === 'lawyer_alert').length, 1);
   assert.equal(messenger.sent.at(-1)!.body, 'Merci. Avez-vous un document à nous transmettre (photo ou PDF) ?');
   // the agent saw its own first answer
-  const turns = (deps.ai as unknown as { calls: { converse: { history: { role: string }[] }[] } }).calls.converse[1]!.history;
-  assert.ok(turns.some((t) => t.role === 'assistant'));
+  const second = (deps.ai as unknown as { calls: { converse: { history: { role: string }[]; caseFile: unknown }[] } }).calls.converse[1]!;
+  assert.ok(second.history.some((t) => t.role === 'assistant'));
+  // and was steered by the first message's analysis
+  assert.deepEqual(second.caseFile, { urgency: 'CRITICAL', missingInformation: ['Lieu de la garde à vue'], requestedDocuments: [] });
 });
 
 test('intake agent failure → plain acknowledgement', async () => {

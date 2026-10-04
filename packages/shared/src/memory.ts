@@ -95,6 +95,10 @@ export class MemoryStore implements CaseStore {
     return { messageId: id };
   }
 
+  async getLatestAnalysis(caseId: string): Promise<unknown> {
+    return this.analyses.filter((a) => a.caseId === caseId).at(-1)?.result ?? null;
+  }
+
   async lastAlertedUrgency(caseId: string): Promise<Urgency | null> {
     const rank: Urgency[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
     let best: Urgency | null = null;
