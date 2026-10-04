@@ -1,7 +1,19 @@
 import Fastify from 'fastify';
+import {
+  applyMigrations,
+  createDb,
+  PostgresCaseStore,
+  seedDemoFixtures,
+  withTransaction,
+} from '@lexora/db';
 import { parseApiEnv } from '@lexora/shared';
-import { MemoryStore } from '@lexora/shared/pipeline';
-import { createDeps, jsonLogger, parseConfig as parseWorkerConfig, processInbound } from '@lexora/worker';
+import { MemoryStore, type CaseStore } from '@lexora/shared/pipeline';
+import {
+  createDeps,
+  jsonLogger,
+  parseConfig as parseWorkerConfig,
+  processInbound,
+} from '@lexora/worker';
 
 import { parseDemoConfig } from './demo-config.js';
 import { demoRoutes } from './demo-page.js';
@@ -27,14 +39,21 @@ const kapsoClient = createKapsoClient({
   phoneNumberId: config.kapsoPhoneNumberId,
 });
 
-// Memory store until packages/db implements CaseStore; seeded with one fictional case.
-const store = MemoryStore.seeded();
-let demoPhones: boolean;
-try {
-  demoPhones = applyDemoPhones(store, demo);
-} catch (err) {
-  console.error(`Refusing to start: ${(err as Error).message}`);
-  process.exit(1);
+const memoryStore = process.env.DATA_MODE === 'memory' ? MemoryStore.seeded() : null;
+if (!memoryStore) await applyMigrations(config.databaseUrl);
+const database = memoryStore
+  ? null
+  : createDb({ connectionString: config.databaseUrl, maxConnections: 5 });
+if (database) await withTransaction(database.db, (tx) => seedDemoFixtures(tx, process.env));
+const store: CaseStore = memoryStore ?? new PostgresCaseStore(database!.db);
+let demoPhones = false;
+if (memoryStore) {
+  try {
+    demoPhones = applyDemoPhones(memoryStore, demo);
+  } catch (err) {
+    console.error(`Refusing to start: ${(err as Error).message}`);
+    process.exit(1);
+  }
 }
 
 const media = new MediaCache();
@@ -60,13 +79,19 @@ await app.register(registerKapsoWebhook, {
   kapsoClient,
   phoneNumberId: config.kapsoPhoneNumberId,
   webhookSecret: config.kapsoWebhookSecret,
-  handleIncomingMessage: createIncomingMessageHandler({ store, openIntake: workerConfig.openIntake, queue, media, log: app.log }),
+  handleIncomingMessage: createIncomingMessageHandler({
+    store,
+    openIntake: workerConfig.openIntake,
+    queue,
+    media,
+    log: app.log,
+  }),
 });
-// Read-only jury screen over the in-memory store.
-await app.register(demoRoutes, { store });
+// The lightweight jury screen is kept for the explicit in-memory demo mode.
+if (memoryStore) await app.register(demoRoutes, { store: memoryStore });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
-  process.once(signal, () => void app.close());
+  process.once(signal, () => void app.close().then(() => database?.close()));
 }
 
 await app.listen({ port: config.port, host: '0.0.0.0' });
