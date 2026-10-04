@@ -23,6 +23,30 @@ const analysisSchema = z.object({
   recommendedActions: z.array(z.string()).optional(),
 });
 
+const legalSchema = z.object({
+  legalSources: z.array(z.object({ reference: z.string(), title: z.string().optional(), excerpt: z.string().optional(), url: z.string().nullable().optional() })).optional(),
+  legalAudit: z.array(z.object({ tool: z.string(), query: z.string(), redacted: z.boolean().optional(), ok: z.boolean(), count: z.number(), ms: z.number() })).optional(),
+});
+
+const TOOLS: Record<string, string> = { echr: 'Convention EDH (copie locale)', judilibre: 'Judilibre (Cour de cassation)' };
+const toolName = (t: string) => TOOLS[t] ?? (t.startsWith('legifrance') ? `Légifrance — ${t.split(':')[1]?.replace('_', ' ') ?? 'codes'}` : t);
+
+/** What the system looked up for the lawyer: every query (after redaction), outcome, and the sources passed to the analysis. */
+function renderLegal(result: unknown): string {
+  const parsed = legalSchema.safeParse(result);
+  const audit = parsed.success ? parsed.data.legalAudit ?? [] : [];
+  const sources = parsed.success ? parsed.data.legalSources ?? [] : [];
+  if (!audit.length && !sources.length) return '<p class="muted">Aucune recherche juridique pour ce message.</p>';
+  const lookups = audit.map((a) => `<li>${escapeHtml(toolName(a.tool))} · ${a.ok ? `${a.count} résultat(s)` : '<strong>échec</strong>'} · ${a.ms} ms<br><span class="muted">Requête envoyée : « ${escapeHtml(a.query)} »${a.redacted ? ' (identité du client masquée)' : ''}</span></li>`).join('');
+  const found = sources.map((src) => {
+    const ref = src.url ? `<a href="${escapeHtml(src.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(src.reference)}</a>` : escapeHtml(src.reference);
+    return `<li><strong>${ref}</strong>${src.title ? ` — ${escapeHtml(src.title)}` : ''}${src.excerpt ? `<br><span class="muted">${escapeHtml(src.excerpt.slice(0, 280))}${src.excerpt.length > 280 ? '…' : ''}</span>` : ''}</li>`;
+  }).join('');
+  return `<h3>Recherches effectuées</h3><ul>${lookups || '<li class="muted">—</li>'}</ul>
+<h3>Sources transmises à l'analyse</h3><ul>${found || '<li class="muted">Aucune.</li>'}</ul>
+<p class="muted">Sources récupérées automatiquement : à vérifier par l'avocat. Le client ne les voit jamais.</p>`;
+}
+
 function readAnalysis(result: unknown): z.infer<typeof analysisSchema> {
   const direct = analysisSchema.safeParse(result);
   if (direct.success && direct.data.urgency) return direct.data;
@@ -97,6 +121,7 @@ export function renderDemoPage({ context, analysis, outbound, now }: DemoView): 
 <section class="analysis"><h2>Dernière analyse</h2>${analysisHtml}</section>
 <section><h2>Conversation</h2>${messages}</section>
 <section><h2>Documents</h2>${documents}</section>
+<section><h2>Sources juridiques consultées</h2>${analysis ? renderLegal(analysis.result) : '<p class="muted">Pas encore d’analyse.</p>'}</section>
 <section><h2>Envois WhatsApp</h2>${sent}</section>
 </main>`;
   }

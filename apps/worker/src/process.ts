@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import type { AnalysisInput, AnalysisResult, ContextMessage, LegalSource } from '@lexora/ai';
+import type { AnalysisInput, AnalysisResult, ContextMessage, LegalAuditEntry, LegalSource } from '@lexora/ai';
 import type { CaseContext, CaseStore, InboundMedia, StoredMessage, Urgency } from '@lexora/shared/pipeline';
 import type { WorkerConfig } from './config.js';
 import { jsonLogger, maskPhone, type AiPort, type LegalPort, type Logger, type MediaDownloader, type Messenger } from './ports.js';
@@ -130,9 +130,11 @@ export async function processInbound(deps: WorkerDeps, messageId: string): Promi
   if (!trigger.text.trim()) trigger.text = '[message sans texte exploitable : média non lu]';
 
   let legalSources: LegalSource[] = [];
+  let legalAudit: LegalAuditEntry[] = [];
   try {
     const legal = await deps.legal.gather(trigger.text, { clientIdentifiers: [ctx.client.displayName] });
     legalSources = legal.sources;
+    legalAudit = legal.audit;
     log.info('legal_context', { messageId, sources: legal.sources.length, lookups: legal.audit.length, failed: legal.audit.filter((a) => !a.ok).length });
   } catch (e) {
     log.warn('legal_context_failed', { messageId, error: errName(e) });
@@ -173,6 +175,8 @@ export async function processInbound(deps: WorkerDeps, messageId: string): Promi
     result: {
       analysis,
       legalSources,
+      // What was asked to Légifrance / Judilibre / ECHR (after redaction), outcome and duration: shown to the lawyer.
+      legalAudit,
       includedMessageIds: result.includedMessageIds,
       includedDocumentIds: result.includedDocumentIds,
       omitted: result.omitted,
