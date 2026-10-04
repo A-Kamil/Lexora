@@ -85,3 +85,11 @@ test('twilio downloader: only https://api.twilio.com, Basic auth, size cap', asy
   const big = twilioDownloader(cfg, (async () => new Response(new Uint8Array(11 * 1024 * 1024))) as typeof fetch);
   await assert.rejects(big.download(AUDIO), /too large/);
 });
+
+test('liveLegal honours LEGAL_CONTEXT_MODE without network for mock/disabled', async () => {
+  const { liveLegal } = await import('../live.js');
+  const mock = await liveLegal(parseConfig({ LEGAL_CONTEXT_MODE: 'mock' })).gather('garde à vue', { clientIdentifiers: [] });
+  assert.deepEqual(mock.sources.map((s) => s.reference), ['MOCK']);
+  const off = await liveLegal(parseConfig({ LEGAL_CONTEXT_MODE: 'disabled' })).gather('garde à vue', { clientIdentifiers: [] });
+  assert.deepEqual(off.sources, []);
+});
