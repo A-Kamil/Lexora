@@ -11,6 +11,11 @@ const schema = z.object({
   LEGAL_CONTEXT_MODE: z.enum(['disabled', 'mock', 'direct']).default('mock'),
   /** Comma-separated E.164 numbers; live sends to any other number are refused. Empty = nothing is sent. */
   DEMO_ALLOWED_NUMBERS: list,
+  /**
+   * true (default): anyone may write to the firm's number (a jury member live). The allowlist then guards
+   * lawyer alerts only; the client acknowledgement goes back to whoever wrote first. false: allowlist for all sends.
+   */
+  DEMO_OPEN_INTAKE: z.enum(['true', 'false']).default('true').transform((v) => v === 'true'),
   MISTRAL_API_KEY: z.string().optional(),
   MISTRAL_ANALYSIS_MODEL: z.string().optional(),
   MISTRAL_OCR_MODEL: z.string().optional(),
@@ -30,6 +35,7 @@ export function parseConfig(env: Record<string, string | undefined>) {
     messagingMode: v.MESSAGING_MODE,
     legalContextMode: v.LEGAL_CONTEXT_MODE,
     allowedNumbers: v.DEMO_ALLOWED_NUMBERS,
+    openIntake: v.DEMO_OPEN_INTAKE,
     mistral: {
       apiKey: v.MISTRAL_API_KEY,
       models: { analysis: v.MISTRAL_ANALYSIS_MODEL, ocr: v.MISTRAL_OCR_MODEL, transcription: v.MISTRAL_TRANSCRIPTION_MODEL },

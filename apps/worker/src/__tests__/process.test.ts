@@ -53,8 +53,18 @@ test('unknown message → nothing happens', async () => {
   assert.equal(store.analyses.length, 0);
 });
 
-test('live messaging refuses numbers outside DEMO_ALLOWED_NUMBERS', async () => {
+test('open intake: lawyer alert still needs the allowlist, the client reply goes back to the sender', async () => {
   const { store, messenger, deps } = setup({ MESSAGING_MODE: 'live', DEMO_ALLOWED_NUMBERS: '+33600000009' });
+  const id = await inbound(store, 'garde à vue');
+  const r = await processInbound(deps, id);
+  assert.equal(r.status === 'processed' && r.alert, 'failed');
+  assert.equal(r.status === 'processed' && r.reply, 'simulated'); // FakeMessenger: delivered, nothing left the machine
+  assert.deepEqual(messenger.sent.map((m) => m.to), ['+33600000001']);
+  assert.equal(store.outbound.find((o) => o.purpose === 'client_reply')!.text, CLIENT_REPLY_RECEIVED);
+});
+
+test('closed intake: live messaging refuses numbers outside DEMO_ALLOWED_NUMBERS', async () => {
+  const { store, messenger, deps } = setup({ MESSAGING_MODE: 'live', DEMO_ALLOWED_NUMBERS: '+33600000009', DEMO_OPEN_INTAKE: 'false' });
   const id = await inbound(store, 'garde à vue');
   const r = await processInbound(deps, id);
   assert.equal(r.status === 'processed' && r.alert, 'failed');

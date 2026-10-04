@@ -60,7 +60,7 @@ await app.register(registerKapsoWebhook, {
   kapsoClient,
   phoneNumberId: config.kapsoPhoneNumberId,
   webhookSecret: config.kapsoWebhookSecret,
-  handleIncomingMessage: createIncomingMessageHandler({ store, queue, media, log: app.log }),
+  handleIncomingMessage: createIncomingMessageHandler({ store, openIntake: workerConfig.openIntake, queue, media, log: app.log }),
 });
 // Read-only jury screen over the in-memory store.
 await app.register(demoRoutes, { store });
@@ -75,6 +75,7 @@ app.log.info(
     ai: workerConfig.aiMode,
     messaging: workerConfig.messagingMode,
     legal: workerConfig.legalContextMode,
+    openIntake: workerConfig.openIntake,
     allowed: demo.allowedNumbers.size,
     demoPhones,
   },

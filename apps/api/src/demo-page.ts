@@ -128,7 +128,9 @@ ${body}
 /** Read-only demo screen over the in-memory store (analyses and outbound are not readable through CaseStore). */
 export async function demoRoutes(app: FastifyInstance, { store }: { store: MemoryStore }) {
   app.get('/demo', async (_request, reply) => {
-    const c = store.cases.find((x) => x.open) ?? store.cases[0];
+    // The case that received the latest inbound message: the one the jury just wrote to.
+    const latest = store.messages.filter((m) => m.direction === 'inbound').at(-1);
+    const c = store.cases.find((x) => x.id === latest?.caseId) ?? store.cases.find((x) => x.open) ?? store.cases[0];
     const context = c ? await store.getCaseContext(c.id) : null;
     const last = c ? store.analyses.filter((a) => a.caseId === c.id).at(-1) : undefined;
     const outbound = c

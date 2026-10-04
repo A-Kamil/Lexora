@@ -240,8 +240,10 @@ async function deliver(
   const { store, config } = deps;
   const { messageId } = await store.saveOutbound({ caseId: o.caseId, personId: o.personId, text: o.text, purpose: o.purpose, analysisId: o.analysisId });
   const fields = { outboundId: messageId, purpose: o.purpose, to: maskPhone(o.phone) };
-  // Allowlist guards real sends; fake mode sends nothing, so it is not consulted there.
-  if (config.messagingMode === 'live' && !config.allowedNumbers.includes(o.phone)) {
+  // Allowlist guards real sends; fake mode sends nothing, so it is not consulted there. With open intake a
+  // client reply is exempt: it only ever goes back to the case client, who wrote to the firm first.
+  const exempt = config.openIntake && o.purpose === 'client_reply';
+  if (config.messagingMode === 'live' && !exempt && !config.allowedNumbers.includes(o.phone)) {
     await store.markOutbound(messageId, 'failed', undefined, 'numéro non autorisé');
     log.warn('outbound_refused', { ...fields, reason: 'numéro non autorisé' });
     return 'failed';

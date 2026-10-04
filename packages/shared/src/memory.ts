@@ -23,6 +23,20 @@ export class MemoryStore implements CaseStore {
     return s;
   }
 
+  /**
+   * Open intake: a number the firm has never seen gets its own case, assigned to the seeded lawyer.
+   * Memory store only (the Postgres store will own this in packages/db). The display name never holds the number.
+   */
+  openIntakeCase(phone: string): { caseId: string; person: Person } {
+    const n = this.cases.length + 1;
+    const person: Person = { id: `p-intake-${n}`, displayName: `Contact WhatsApp n°${n}`, phoneE164: phone, role: 'client' };
+    const lawyer = this.people.find((p) => p.role === 'lawyer') ?? null;
+    this.people.push(person);
+    const caseId = `c-${n}`;
+    this.cases.push({ id: caseId, title: `Accueil WhatsApp n°${n}`, jurisdiction: 'FR', language: 'fr', timezone: 'Europe/Paris', clientId: person.id, lawyerId: lawyer?.id ?? null, open: true });
+    return { caseId, person };
+  }
+
   async resolveParticipant(phone: string): Promise<ResolveResult> {
     const person = this.people.find((p) => p.phoneE164 === phone);
     if (!person) return { kind: 'absent' };
