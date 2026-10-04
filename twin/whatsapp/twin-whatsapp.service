@@ -1,0 +1,23 @@
+# Service utilisateur systemd — connecteur MCP WhatsApp.
+# Installation : voir README.md (section « En service »).
+[Unit]
+Description=Twin ecosystem — connecteur MCP WhatsApp
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=%h/.local/bin/twin-whatsapp
+Environment=TWIN_WA_DATA_DIR=%h/.local/share/twin/whatsapp
+Environment=TWIN_WA_LISTEN=127.0.0.1:8081
+Environment=TWIN_WA_LOG_LEVEL=info
+Restart=always
+RestartSec=5
+# Données T1 : le service ne voit que son répertoire de données.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.local/share/twin/whatsapp
+
+[Install]
+WantedBy=default.target
