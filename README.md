@@ -1,5 +1,7 @@
 # Lexora backend (TypeScript)
 
+Check out demo video in the repo demo_video.mov.
+
 Legal-intake backend: a known client's messages and documents are resolved to a case,
 triaged into a structured assessment, and escalated to the assigned lawyer.
 
