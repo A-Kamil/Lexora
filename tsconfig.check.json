@@ -1,0 +1,17 @@
+{
+  // Type-checks the code that is not part of the build graph: the integration suite and
+  // the root tool configs. Without this, `pnpm check` would leave the largest single
+  // file in the repository unchecked.
+  //
+  // `noEmit`, so it cannot be referenced by the build; it only consumes the packages'
+  // declarations, which `pnpm run typecheck` produces first.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false
+  },
+  "include": ["tests/**/*.ts", "vitest.config.ts", "vitest.integration.config.ts"]
+}

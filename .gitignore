@@ -1,0 +1,16 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Secrets: the example is tracked explicitly, real env files never are.
+.env
+.env.*
+!.env.example
+
+# Python prototype (emmanuel/) local artifacts
+.venv/
+__pycache__/
+*.pyc
+
+coverage/
+.DS_Store

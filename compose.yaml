@@ -1,0 +1,33 @@
+# Local development database only.
+#
+# The API and worker containers belong to Task 10; this file deliberately stops
+# at the database so `docker compose up -d db` stays the single prerequisite for
+# `pnpm db:migrate` and `pnpm db:seed`.
+name: lexora
+
+services:
+  db:
+    # Pinned major+minor. Match this major to the hosted PostgreSQL major chosen
+    # for the demo project before running integration against it (design: delivery
+    # boundaries). 16 is the local default until that project is selected.
+    image: postgres:16.13-alpine
+    environment:
+      POSTGRES_USER: lexora
+      POSTGRES_PASSWORD: lexora_local_dev
+      POSTGRES_DB: lexora
+    ports:
+      # 5435 avoids colliding with other local PostgreSQL instances.
+      - '127.0.0.1:5435:5432'
+    volumes:
+      - lexora_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U lexora -d lexora']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  lexora_pgdata:
+    name: lexora_pgdata
