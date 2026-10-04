@@ -3,9 +3,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'node:path';
 
-// The lawyer dashboard reads demo data from `src/mocks` for now (see
-// `src/lib/api.ts`); no dev proxy is needed until the backend exposes its
-// read API.
+// The dashboard reads the API's /api/cases (apps/api, port 3000 by default; LEXORA_API_URL overrides).
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -13,5 +11,11 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
-  server: { port: 5173 },
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': process.env.LEXORA_API_URL ?? 'http://localhost:3000',
+      '/health': process.env.LEXORA_API_URL ?? 'http://localhost:3000',
+    },
+  },
 });

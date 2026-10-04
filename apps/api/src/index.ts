@@ -5,6 +5,7 @@ import { createDeps, jsonLogger, parseConfig as parseWorkerConfig, processInboun
 
 import { parseDemoConfig } from './demo-config.js';
 import { demoRoutes } from './demo-page.js';
+import { readApiRoutes } from './read-api.js';
 import { applyDemoPhones } from './demo-phones.js';
 import { createIncomingMessageHandler } from './incoming-message-handler.js';
 import { InProcessQueue } from './inprocess-queue.js';
@@ -77,6 +78,8 @@ await app.register(registerKapsoWebhook, {
 });
 // Read-only jury screen over the in-memory store.
 await app.register(demoRoutes, { store });
+// Lawyer dashboard (apps/web) read API.
+await app.register(readApiRoutes, { store });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => void app.close());

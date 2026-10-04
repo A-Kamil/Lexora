@@ -30,6 +30,26 @@ export interface AnalysisRecord {
   result: CaseAnalysis;
   /** Documents actually read to produce this analysis — never claim more. */
   reviewedDocumentCount: number;
+  /** Legal sources retrieved and given to the analysis (to be verified by the lawyer). */
+  legalSources?: LegalSource[];
+  /** Every external legal lookup: query sent (after redaction), outcome, duration. */
+  legalAudit?: LegalLookup[];
+}
+
+export interface LegalSource {
+  reference: string;
+  title?: string;
+  excerpt?: string;
+  url?: string | null;
+}
+
+export interface LegalLookup {
+  tool: string;
+  query: string;
+  redacted?: boolean;
+  ok: boolean;
+  count: number;
+  ms: number;
 }
 
 export type EscalationStatus =

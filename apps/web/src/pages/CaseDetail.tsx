@@ -7,6 +7,7 @@
 import { useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AnalysisPanel } from '@/components/case/AnalysisPanel';
+import { LegalSourcesPanel } from '@/components/case/LegalSourcesPanel';
 import { DeadlinesPanel } from '@/components/case/DeadlinesPanel';
 import { DocumentsPanel } from '@/components/case/DocumentsPanel';
 import { MessageThread } from '@/components/case/MessageThread';
@@ -62,6 +63,10 @@ function CaseView({ caseId }: { caseId: string }) {
         <div className="case-grid">
           <div className="case-grid__col">
             <AnalysisPanel result={data.analysis?.result ?? null} />
+            <LegalSourcesPanel
+              sources={data.analysis?.legalSources ?? []}
+              audit={data.analysis?.legalAudit ?? []}
+            />
             <DeadlinesPanel deadlines={data.deadlines} timezone={data.timezone} />
           </div>
           <div className="case-grid__col">
