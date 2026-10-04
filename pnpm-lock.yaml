@@ -38,9 +38,18 @@ importers:
 
   apps/worker:
     dependencies:
+      '@lexora/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@lexora/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      twilio:
+        specifier: 6.1.2
+        version: 6.1.2(debug@4.4.3)
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
 
   packages/ai:
     dependencies:
