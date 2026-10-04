@@ -14,6 +14,7 @@ and never execute actions. Using ONLY the case context provided, return the requ
 - requiresLawyer, missingInformation, requestedDocuments, recommendedActions (for the lawyer, not the client).
 Dates found in the context are unverified mentions: never present them as confirmed deadlines.
 Do not claim to have reviewed a document that is not in the context.
+Cite a legal reference (article, decision) ONLY if it appears in a LEGAL SOURCE block; otherwise write "legal basis to be verified by the lawyer".
 Answer in the case language.`;
 
 export const OCR_METADATA_SYSTEM = `You classify a document sent by a client to a law firm.

@@ -25,11 +25,21 @@ export async function getArticle(piste: Piste, code: CodeKey, num: string): Prom
 interface SearchResponse { results?: Array<{ sections?: Array<{ extracts?: Array<{ id?: string; num?: string; values?: string[] }> }> }> }
 
 /** Full-text search in one code, version in force today. */
+const STOP = new Set(["d'un", "d'une", "l'", 'des', 'les', 'une', 'pour', 'par', 'sur', 'dans', 'que', 'qui', 'aux', 'est', 'droit', 'du', 'de', 'la', 'le', 'un', 'et', 'à', 'au']);
+const keywords = (q: string) => q.toLowerCase().replace(/[’']/g, ' ').split(/\s+/).filter((w) => w.length > 2 && !STOP.has(w)).join(' ');
+
+/** Full-text search in one code, version in force today. All keywords first (precise), any keyword as fallback. */
 export async function searchCode(piste: Piste, query: string, code: CodeKey = 'travail', n = 5): Promise<LegalSource[]> {
+  const kw = keywords(query) || query;
+  const precise = await searchCodeWith(piste, kw, code, n, 'TOUS_LES_MOTS_DANS_UN_CHAMP');
+  return precise.length ? precise : searchCodeWith(piste, kw, code, n, 'UN_DES_MOTS');
+}
+
+async function searchCodeWith(piste: Piste, query: string, code: CodeKey, n: number, typeRecherche: string): Promise<LegalSource[]> {
   const j = await piste.post<SearchResponse>(`${BASE}/search`, {
     fond: 'CODE_DATE',
     recherche: {
-      champs: [{ typeChamp: 'ALL', operateur: 'ET', criteres: [{ typeRecherche: 'UN_DES_MOTS', valeur: query, operateur: 'ET' }] }],
+      champs: [{ typeChamp: 'ALL', operateur: 'ET', criteres: [{ typeRecherche, valeur: query, operateur: 'ET' }] }],
       filtres: [{ facette: 'DATE_VERSION', singleDate: Date.now() }, { facette: 'NOM_CODE', valeurs: [CODES[code].name] }],
       pageNumber: 1, pageSize: n, operateur: 'ET', sort: 'PERTINENCE', typePagination: 'ARTICLE',
     },
