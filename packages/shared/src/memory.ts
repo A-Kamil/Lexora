@@ -36,7 +36,7 @@ export class MemoryStore implements CaseStore {
     const existing = this.messages.find((m) => m.providerMessageId === i.providerMessageId);
     if (existing) return { message: existing, created: false };
     const message = { id: randomUUID(), caseId: i.caseId, conversationId: `conv-${i.caseId}`, personId: i.personId, direction: 'inbound' as const,
-      kind: (i.media.length && !i.text ? 'document' : 'text') as StoredMessage['kind'], text: i.text, createdAt: i.receivedAt, providerMessageId: i.providerMessageId };
+      kind: (i.media.length && !i.text ? 'document' : 'text') as StoredMessage['kind'], text: i.text, createdAt: i.receivedAt, providerMessageId: i.providerMessageId, media: i.media };
     this.messages.push(message);
     return { message, created: true };
   }

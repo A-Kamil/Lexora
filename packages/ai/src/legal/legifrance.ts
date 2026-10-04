@@ -31,7 +31,12 @@ const keywords = (q: string) => q.toLowerCase().replace(/[’']/g, ' ').split(/\
 /** Full-text search in one code, version in force today. All keywords first (precise), any keyword as fallback. */
 export async function searchCode(piste: Piste, query: string, code: CodeKey = 'travail', n = 5): Promise<LegalSource[]> {
   const kw = keywords(query) || query;
-  const precise = await searchCodeWith(piste, kw, code, n, 'TOUS_LES_MOTS_DANS_UN_CHAMP');
+  let precise: LegalSource[] = [];
+  try {
+    precise = await searchCodeWith(piste, kw, code, n, 'TOUS_LES_MOTS_DANS_UN_CHAMP');
+  } catch {
+    // precise mode refused by the API: fall back to the mode verified live
+  }
   return precise.length ? precise : searchCodeWith(piste, kw, code, n, 'UN_DES_MOTS');
 }
 

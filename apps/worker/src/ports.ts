@@ -4,7 +4,7 @@ import type { AnalysisInput, AnalysisResult, LegalAuditEntry, LegalSource } from
 export interface AiPort {
   analyze(input: AnalysisInput): Promise<AnalysisResult>;
   transcribe(input: { bytes: Uint8Array; fileName: string }): Promise<{ text: string }>;
-  extract(input: { bytes: Uint8Array; mimeType: string; fileName?: string }): Promise<{ text: string; documentType: string }>;
+  extract(input: { bytes: Uint8Array; mimeType: string; fileName?: string }): Promise<{ text: string; documentType: string; summary?: string }>;
 }
 
 export interface Messenger {

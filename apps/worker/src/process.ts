@@ -216,7 +216,7 @@ async function processMedia(deps: WorkerDeps, log: Logger, message: StoredMessag
         if (!deps.downloader) throw new Error('no media downloader configured');
         const file = await deps.downloader.download(m.url);
         const r = await deps.ai.extract({ bytes: file.bytes, mimeType: type, fileName: `document-${message.id}-${m.index}` });
-        const d = await store.saveDocument({ caseId: message.caseId, messageId: message.id, mimeType: type, status: 'ready', extractedText: r.text, documentType: r.documentType });
+        const d = await store.saveDocument({ caseId: message.caseId, messageId: message.id, mimeType: type, status: 'ready', extractedText: r.text, documentType: r.documentType, summary: r.summary ?? null });
         log.info('document_ready', { messageId: message.id, index: m.index, documentId: d.id, chars: r.text.length });
       } catch (e) {
         const d = await store.saveDocument({ caseId: message.caseId, messageId: message.id, mimeType: type, status: 'failed', extractedText: null, documentType: null });

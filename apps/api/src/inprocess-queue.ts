@@ -23,7 +23,14 @@ export function workerRunner(getDeps: () => { store: CaseStore; queue: JobQueue;
   const load = async (log: FastifyBaseLogger): Promise<ProcessInbound | null> => {
     const specifier = '@lexora/worker'; // variable: not resolved at compile time, the worker may not exist yet
     try {
-      const mod: { processInbound?: unknown } = await import(specifier);
+      const mod: { processInbound?: unknown; createDeps?: unknown; parseConfig?: unknown } = await import(specifier);
+      if (typeof mod.processInbound === 'function' && typeof mod.createDeps === 'function' && typeof mod.parseConfig === 'function') {
+        // Worker deps (AI, messaging, legal sources) come from the worker's own config, read from the environment.
+        const config = (mod.parseConfig as (env: NodeJS.ProcessEnv) => unknown)(process.env);
+        const run = mod.processInbound as (deps: unknown, messageId: string) => Promise<unknown>;
+        const create = mod.createDeps as (config: unknown, store: CaseStore) => unknown;
+        return (deps, messageId) => run(create(config, deps.store), messageId);
+      }
       if (typeof mod.processInbound === 'function') return mod.processInbound as ProcessInbound;
       log.warn('worker absent: @lexora/worker has no processInbound export');
     } catch (err) {

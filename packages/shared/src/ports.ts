@@ -31,9 +31,10 @@ export interface StoredMessage {
   id: string; caseId: string; conversationId: string; personId: string | null;
   direction: 'inbound' | 'outbound'; kind: 'text' | 'voice' | 'document' | 'system';
   text: string; createdAt: string;
+  media?: InboundMedia[]; // inbound attachments (voice notes, documents) still to process
 }
 
-export interface StoredDocument { id: string; caseId: string; messageId: string; mimeType: string; status: 'pending' | 'ready' | 'failed'; extractedText: string | null; documentType: string | null }
+export interface StoredDocument { id: string; caseId: string; messageId: string; mimeType: string; status: 'pending' | 'ready' | 'failed'; extractedText: string | null; documentType: string | null; summary?: string | null }
 
 export interface CaseContext {
   case: CaseRef;

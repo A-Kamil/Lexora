@@ -67,7 +67,7 @@ export function renderDemoPage({ context, analysis, outbound, now }: DemoView): 
     const documents = context.documents.length === 0
       ? '<p class="muted">Aucun document.</p>'
       : context.documents.map((d) => {
-          const extract = d.extractedText ? d.extractedText.slice(0, EXTRACT_CHARS) + (d.extractedText.length > EXTRACT_CHARS ? '…' : '') : '';
+          const extract = d.summary ? d.summary : d.extractedText ? d.extractedText.slice(0, EXTRACT_CHARS) + (d.extractedText.length > EXTRACT_CHARS ? '…' : '') : '';
           return `<article><div class="meta">${escapeHtml(d.documentType ?? 'type inconnu')} · ${escapeHtml(d.mimeType)} · ${escapeHtml(d.status)}</div>${extract ? `<p>${escapeHtml(extract)}</p>` : '<p class="muted">Pas encore de texte.</p>'}</article>`;
         }).join('');
 

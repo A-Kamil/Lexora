@@ -15,7 +15,7 @@ export function liveAi(config: WorkerConfig): AiPort {
     transcribe: async (input) => ({ text: (await transcribeVoice(client, input, models.transcription)).text }),
     extract: async (input) => {
       const r = await extractDocument(client, input, models);
-      return { text: r.text, documentType: r.metadata.documentType };
+      return { text: r.text, documentType: r.metadata.documentType, summary: r.metadata.summary };
     },
   };
 }
