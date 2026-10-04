@@ -18,4 +18,6 @@ pnpm install            # adds @mistralai/mistralai to the lockfile
 pnpm --filter @lexora/ai build && pnpm --filter @lexora/ai smoke
 ```
 
+Live check (real calls, fictional police-custody message): `pnpm --filter @lexora/ai build && pnpm --filter @lexora/ai live-check` (reads the root `.env`).
+
 Not yet run against the live Légifrance/Judilibre APIs: the request formats follow the PISTE documentation; failures surface as `ok:false` audit entries, never as crashes.

@@ -13,7 +13,8 @@
   "scripts": {
     "build": "tsc -b",
     "dev": "tsc -b -w --preserveWatchOutput",
-    "smoke": "node dist/smoke.js"
+    "smoke": "node dist/smoke.js",
+    "live-check": "node --env-file=../../.env dist/live-check.js"
   },
   "dependencies": {
     "@mistralai/mistralai": "2.7.0",
