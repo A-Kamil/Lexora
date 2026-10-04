@@ -7,7 +7,7 @@ export function mistralClient(apiKey: string | undefined): Mistral {
 }
 
 export const DEFAULT_MODELS = {
-  analysis: 'mistral-medium-latest',
+  analysis: 'mistral-large-latest',
   ocr: 'mistral-ocr-latest',
   transcription: 'voxtral-mini-latest',
 } as const;

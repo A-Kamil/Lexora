@@ -17,6 +17,7 @@ const schema = z.object({
    */
   DEMO_OPEN_INTAKE: z.enum(['true', 'false']).default('true').transform((v) => v === 'true'),
   MISTRAL_API_KEY: z.string().optional(),
+  MISTRAL_MODEL: z.string().optional(),
   MISTRAL_ANALYSIS_MODEL: z.string().optional(),
   MISTRAL_OCR_MODEL: z.string().optional(),
   MISTRAL_TRANSCRIPTION_MODEL: z.string().optional(),
@@ -38,7 +39,7 @@ export function parseConfig(env: Record<string, string | undefined>) {
     openIntake: v.DEMO_OPEN_INTAKE,
     mistral: {
       apiKey: v.MISTRAL_API_KEY,
-      models: { analysis: v.MISTRAL_ANALYSIS_MODEL, ocr: v.MISTRAL_OCR_MODEL, transcription: v.MISTRAL_TRANSCRIPTION_MODEL },
+      models: { analysis: v.MISTRAL_ANALYSIS_MODEL ?? v.MISTRAL_MODEL, ocr: v.MISTRAL_OCR_MODEL, transcription: v.MISTRAL_TRANSCRIPTION_MODEL },
     },
     piste: v.PISTE_CLIENT_ID && v.PISTE_CLIENT_SECRET
       ? { clientId: v.PISTE_CLIENT_ID, clientSecret: v.PISTE_CLIENT_SECRET, env: v.PISTE_ENV }

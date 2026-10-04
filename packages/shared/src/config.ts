@@ -8,7 +8,7 @@ const baseEnvSchema = z.object({
 
 const apiEnvSchema = baseEnvSchema.extend({
   MISTRAL_API_KEY: z.string().min(1),
-  MISTRAL_MODEL: z.string().min(1).default('mistral-small-latest'),
+  MISTRAL_MODEL: z.string().min(1).default('mistral-large-latest'),
   KAPSO_API_KEY: z.string().min(1),
   KAPSO_PHONE_NUMBER_ID: z.string().min(1),
   KAPSO_WEBHOOK_SECRET: z.string().min(1),
