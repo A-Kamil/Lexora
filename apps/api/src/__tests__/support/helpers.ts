@@ -25,7 +25,7 @@ export function testConfig(overrides: Record<string, string> = {}): ApiConfig {
 export function setup(overrides: Record<string, string> = {}) {
   const store = MemoryStore.seeded();
   const queue = new MemoryQueue();
-  const app = buildApp({ store, queue, config: testConfig(overrides) });
+  const app = buildApp({ store, queue, config: testConfig(overrides), logger: false });
   return { store, queue, app };
 }
 

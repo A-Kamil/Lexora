@@ -36,6 +36,13 @@ For real phones, set `DEMO_CLIENT_PHONE` and `DEMO_LAWYER_PHONE` (also listed in
 (`deps = { store, queue, log }`). If the worker is missing, the job is logged as "worker absent".
 With `STORE_MODE=db` this will be pg-boss.
 
+## Demo screen (jury)
+
+`GET /demo` — read-only HTML page (no CDN, no script, refreshes every 3 s) for the case in memory: messages received
+(text or transcript), documents (type, status, text extract), last analysis (urgency, reason, missing information,
+recommended actions) and messages sent (lawyer alert, client acknowledgement, with status). No phone numbers are shown.
+Only registered with `APP_MODE=demo` and the memory store. Open `http://localhost:3000/demo`.
+
 ## Behaviour of `POST /webhooks/twilio`
 
 1. Invalid or missing signature → 403.
