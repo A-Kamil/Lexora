@@ -6,10 +6,7 @@ import {
   type KapsoClient,
   type ParsedKapsoMessage,
 } from '../whatsapp/kapso.js';
-import type {
-  IncomingMessageHandler,
-  IncomingWhatsAppMessage,
-} from '../whatsapp/types.js';
+import type { IncomingMessageHandler, IncomingWhatsAppMessage } from '../whatsapp/types.js';
 
 type KapsoWebhookOptions = {
   kapsoClient: KapsoClient;
@@ -36,10 +33,8 @@ export async function registerKapsoWebhook(
 ): Promise<void> {
   const processedKeys = new Set<string>();
 
-  app.addContentTypeParser(
-    'application/json',
-    { parseAs: 'buffer' },
-    (_request, body, done) => done(null, body),
+  app.addContentTypeParser('application/json', { parseAs: 'buffer' }, (_request, body, done) =>
+    done(null, body),
   );
 
   async function safeSend(to: string, body: string): Promise<void> {
@@ -52,10 +47,7 @@ export async function registerKapsoWebhook(
 
   async function processMessage(message: ParsedKapsoMessage): Promise<void> {
     if (message.kind === 'unsupported') {
-      await safeSend(
-        message.from,
-        'Please send text, an image, or a PDF document.',
-      );
+      await safeSend(message.from, 'Please send text, an image, or a PDF document.');
       return;
     }
 
@@ -113,10 +105,7 @@ export async function registerKapsoWebhook(
       return reply.code(401).send({ error: 'Invalid signature' });
     }
 
-    if (
-      headerValue(request.headers['x-webhook-event']) !==
-      'whatsapp.message.received'
-    ) {
+    if (headerValue(request.headers['x-webhook-event']) !== 'whatsapp.message.received') {
       return reply.code(200).send({ received: true });
     }
 
@@ -135,8 +124,7 @@ export async function registerKapsoWebhook(
     if (!message) return reply.code(200).send({ received: true });
 
     const idempotencyKey =
-      headerValue(request.headers['x-idempotency-key']) ??
-      message.providerMessageId;
+      headerValue(request.headers['x-idempotency-key']) ?? message.providerMessageId;
     if (processedKeys.has(idempotencyKey)) {
       return reply.code(200).send({ received: true });
     }

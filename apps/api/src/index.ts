@@ -1,12 +1,19 @@
 import Fastify from 'fastify';
 import { parseApiEnv } from '@lexora/shared';
 
-import { handleIncomingMessage } from './incoming-message-handler.js';
+import { createMistralReply } from './ai/mistral.js';
+import { createIncomingMessageHandler } from './incoming-message-handler.js';
 import { registerKapsoWebhook } from './routes/kapso-webhook.js';
 import { createKapsoClient } from './whatsapp/kapso.js';
 
 const config = parseApiEnv(process.env);
 const app = Fastify({ logger: true });
+const handleIncomingMessage = createIncomingMessageHandler(
+  createMistralReply({
+    apiKey: config.mistralApiKey,
+    model: config.mistralModel,
+  }),
+);
 const kapsoClient = createKapsoClient({
   apiKey: config.kapsoApiKey,
   phoneNumberId: config.kapsoPhoneNumberId,

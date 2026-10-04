@@ -1,13 +1,10 @@
 import type { IncomingMessageHandler } from './whatsapp/types.js';
 
-export const handleIncomingMessage: IncomingMessageHandler = async (message) => {
-  console.info('Incoming WhatsApp message', {
-    providerMessageId: message.providerMessageId,
-    conversationId: message.conversationId,
-    from: message.from,
-    kind: message.kind,
-    hasMedia: Boolean(message.media),
-  });
+export type GenerateReply = (message: string) => Promise<string>;
 
-  return 'Thanks, we received your message.';
-};
+export function createIncomingMessageHandler(generateReply: GenerateReply): IncomingMessageHandler {
+  return async (message) => {
+    if (message.kind !== 'text' || !message.text?.trim()) return undefined;
+    return generateReply(message.text);
+  };
+}

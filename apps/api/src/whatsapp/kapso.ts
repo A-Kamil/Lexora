@@ -4,12 +4,7 @@ import type { DownloadedMedia } from './types.js';
 
 const API_BASE = 'https://api.kapso.ai/meta/whatsapp/v24.0';
 const MAX_MEDIA_BYTES = 10 * 1024 * 1024;
-const SUPPORTED_MEDIA_TYPES = new Set([
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]);
+const SUPPORTED_MEDIA_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);
 
 type JsonRecord = Record<string, unknown>;
 
@@ -34,9 +29,7 @@ export type KapsoClient = {
 };
 
 function asRecord(value: unknown): JsonRecord | undefined {
-  return typeof value === 'object' && value !== null
-    ? (value as JsonRecord)
-    : undefined;
+  return typeof value === 'object' && value !== null ? (value as JsonRecord) : undefined;
 }
 
 function asString(value: unknown): string | undefined {
@@ -60,26 +53,16 @@ export function verifyKapsoSignature(
   );
 }
 
-export function parseKapsoMessage(
-  payload: unknown,
-): ParsedKapsoMessage | null {
+export function parseKapsoMessage(payload: unknown): ParsedKapsoMessage | null {
   const root = asRecord(payload);
   const message = asRecord(root?.message);
   const conversation = asRecord(root?.conversation);
   const providerMessageId = asString(message?.id);
   const conversationId = asString(conversation?.id);
-  const from =
-    asString(message?.from) ?? asString(conversation?.phone_number);
+  const from = asString(message?.from) ?? asString(conversation?.phone_number);
   const type = asString(message?.type);
 
-  if (
-    !message ||
-    !conversation ||
-    !providerMessageId ||
-    !conversationId ||
-    !from ||
-    !type
-  ) {
+  if (!message || !conversation || !providerMessageId || !conversationId || !from || !type) {
     return null;
   }
 
@@ -96,8 +79,7 @@ export function parseKapsoMessage(
     const image = asRecord(message.image);
     const mediaId = asString(image?.id);
     const text = asString(image?.caption);
-    const mimeType =
-      asString(image?.mime_type) ?? asString(kapsoMedia?.content_type);
+    const mimeType = asString(image?.mime_type) ?? asString(kapsoMedia?.content_type);
     const filename = asString(kapsoMedia?.filename);
     if (!mediaId) return null;
 
@@ -114,11 +96,9 @@ export function parseKapsoMessage(
   if (type === 'document') {
     const document = asRecord(message.document);
     const mediaId = asString(document?.id);
-    const mimeType =
-      asString(document?.mime_type) ?? asString(kapsoMedia?.content_type);
+    const mimeType = asString(document?.mime_type) ?? asString(kapsoMedia?.content_type);
     const text = asString(document?.caption);
-    const filename =
-      asString(document?.filename) ?? asString(kapsoMedia?.filename);
+    const filename = asString(document?.filename) ?? asString(kapsoMedia?.filename);
 
     if (!mediaId) return null;
     if (mimeType !== 'application/pdf') return { ...base, kind: 'unsupported' };
