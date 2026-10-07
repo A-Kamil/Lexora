@@ -1,30 +1,54 @@
-# Lexora backend (TypeScript)
+# Lexora
+
+**WhatsApp legal intake.** A client writes to one WhatsApp number — text, voice notes,
+photos, PDFs. Lexora opens a case, asks the qualifying questions, transcribes and reads
+every document, looks up the relevant law, rates the urgency, alerts the lawyer on WhatsApp
+when it is high or critical, and lays the whole case out on the lawyer's dashboard.
+Lexora informs and qualifies; only the lawyer advises.
+
+Built at the LLM x Law Hackathon Paris (Stanford Law × Mistral AI), 4 October 2026.
 
 https://github.com/user-attachments/assets/b049fdda-12a1-432a-82bf-9df9b141858f
 
-Legal-intake backend: a known client's messages and documents are resolved to a case,
-triaged into a structured assessment, and escalated to the assigned lawyer.
+## Flow
 
-**Current state — the data layer only.** The nine domain tables, the shared contracts and
-the data service exist and are tested. Nothing talks to Twilio, Mistral, object storage or
-a legal source yet, and there is no queue, worker or HTTP API. Those arrive with their own
-tasks in [the plan](docs/superpowers/plans/2026-10-04-repository-backend.md), against
-[the design](docs/superpowers/specs/2026-10-04-backend-design.md). Those two documents are
-normative; this README only says how to run what exists.
+```text
+WhatsApp (Kapso) ──► POST /webhooks/kapso  (HMAC checked)
+                       ├─► case store
+                       ├─► intake agent (Mistral) ──► reply to the client
+                       ├─► voice → Voxtral · documents → OCR · photos → vision model
+                       ├─► legal lookups: Légifrance, Judilibre (PISTE), ECHR
+                       └─► urgency analysis ──► WhatsApp alert to the lawyer (HIGH / CRITICAL)
+lawyer dashboard (apps/web) ◄── GET /api/cases
+```
 
-The Python prototype in [`emmanuel/`](emmanuel/README.md) is a separate, working system.
-It is not migrated, reused or modified by this workspace.
+To run the demo end to end (Kapso sandbox, tunnel, `.env`, script, troubleshooting),
+follow [`DEMO.md`](DEMO.md).
 
 ## Layout
 
 ```text
+apps/api/          Fastify: Kapso webhook, read API, /demo; runs the worker in-process
+apps/worker/       intake pipeline per inbound message: media, document retrieval,
+                   conversation, analysis, legal context, lawyer alert
+apps/web/          lawyer dashboard — Vite, React 19, Tailwind 4 (French)
+packages/ai/       Mistral calls: conversation, analysis, OCR, vision, transcription, legal sources
 packages/shared/   domain contracts and Zod schemas; imports no database or provider SDK
 packages/db/       every domain SQL query, the Drizzle schema and migrations
 tests/integration/ runs against a real PostgreSQL it provisions and drops itself
+emmanuel/          first prototype in Python (Twilio, control point with an HMAC-chained
+                   journal); standalone, see its README
 ```
 
-Dependency direction is `shared ← db`. Applications (`apps/api`, `apps/worker`) do not
-exist yet and will consume both without writing SQL of their own.
+Dependency direction is `shared ← db`; applications consume both without writing SQL of
+their own. `DATA_MODE=memory` (the demo setting) keeps cases in
+`apps/api/data/lexora-store.json`; without it the API uses PostgreSQL, where the dashboard
+has no read API yet.
+
+The data layer follows [the plan](docs/superpowers/plans/2026-10-04-repository-backend.md)
+and [the design](docs/superpowers/specs/2026-10-04-backend-design.md).
+
+The sections below cover the PostgreSQL data layer.
 
 ## Run it
 
@@ -59,12 +83,14 @@ code and commit it; `drizzle-kit push` is deliberately not wired up.
 
 ## Environment
 
-Every variable is documented in `.env.example`. This milestone reads four:
+Every variable is documented in `.env.example`. The data layer reads three:
 `DATABASE_URL` (the application identity), `MIGRATION_DATABASE_URL` (a separate
 schema-migration identity, higher-privilege in a deployed environment),
 and `TEST_ADMIN_DATABASE_URL` (integration tests only).
 
-Provider credentials are absent on purpose: nothing here can reach an external service.
+Provider credentials (Mistral, Kapso, PISTE) are read only by `apps/api`. With
+`AI_MODE=fake`, `MESSAGING_MODE=fake` and `LEGAL_CONTEXT_MODE=mock` (the `.env.example`
+defaults) nothing reaches an external service.
 
 ## Resetting the local database
 
